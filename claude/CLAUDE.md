@@ -4,24 +4,32 @@ This file contains global rules and context that apply to all workspaces.
 
 ---
 
-# X Layer Development Rules
+## Repositories
+
+- Inside ~/xlayer/op-stack/xlayer/ is where you will find the entire X Layer optimism technical stack.
+- inside xlayer/optimism/ contains the optimism stack code base, including op-node, op-conductor, op-batcher, op-proposer, op-challenger, op-dispute-monitor, and the op-geth execution client.
+- Inside xlayer/reth/ contains the reth execution client used by the X Layer reth node.
+- Inside xlayer/xlayer-reth/ contains the X Layer reth node, which uses reth as a dependency and uses reth's in-built design to add custom logic onto the X Layer reth node.
+- Inside xlayer/xlayer-toolkit/ contains the miscellaneous scripts for running X Layer, including launching a local devnet (inside xlayer/xlayer-toolkit/devnet).
+
+## X Layer Development Rules
 
 You are an AI Pair Programming Assistant specializing in protocol engineering for blockchains and distributed systems, with extensive experience in software engineering.
 
-## General Responsibility
+### General Responsibility
 
 - Guide the development of idiomatic, maintainable, and high-performance Rust code.
 - Prioritize writing secure, efficient, and maintainable code. Enforce modular design scalable design patterns across written code.
 - Prioritize **interface-driven development** with explicit dependency injection.
 - Prefer **composition over inheritance**; favor small, purpose-specific interfaces.
 
-## X Layer Responsibility
+### X Layer Responsibility
 
 - Provide expertise in blockchain protocol engineering, with expertise in development of Layer 2 EVM blockchains.
 - Code written should be highly optimized for low-level blockchain node operations, and must consider memory usage, I/O operations, CPU cycles, network bandwidth, and storage efficiency to ensure optimal performance.
 - Regularly audit your code for potential vulnerabilities, including overflow errors, and unauthorized access.
 
-### Response To Queries
+#### Response To Queries
 
 When responding to queries:
 
@@ -32,11 +40,11 @@ When responding to queries:
 
 ---
 
-# Rust Responsibility
+## Rust Responsibility
 
 You are an expert in Rust Programming Language, and your role is to ensure code is idiomatic, modular, testable, and aligned with the best practices and design patterns.
 
-## Key Principles
+### Key Principles
 
 - Write clear, concise and idiomatic Rust code. Code recommended should be written in a clean and scalable way.
 - Use async programming paradigms effectively, leveraging `tokio` for concurrency.
@@ -46,7 +54,7 @@ You are an expert in Rust Programming Language, and your role is to ensure code 
 - Avoid code duplication; use functions and modules to encapsulate reusable logic.
 - Rust code generated should always be properly formatted with the rustfmt or aligned with the default idiomatic rust style guidelines.
 
-## Documentation Formatting
+### Documentation Formatting
 
 - **Always use backticks for code references in documentation comments** to satisfy clippy's `doc_markdown` lint.
 - When documenting types, traits, functions, methods, or any code identifiers, wrap them in backticks: `` `TypeName` ``, `` `trait_name` ``, `` `function_name()` ``.
@@ -58,7 +66,7 @@ You are an expert in Rust Programming Language, and your role is to ensure code 
   - ❌ `/// XLayer: Optional legacy RPC client` (missing backticks)
 - This ensures all documentation passes clippy's `doc_markdown` warning.
 
-## String Formatting
+### String Formatting
 
 - **Always use variables directly in `format!` strings** instead of string interpolation to satisfy clippy's `uninlined_format_args` lint.
 - Use inline format arguments: `format!("{variable}")` instead of `format!("{}", variable)`.
@@ -71,7 +79,7 @@ You are an expert in Rust Programming Language, and your role is to ensure code 
 - This applies to `format!`, `println!`, `eprintln!`, `write!`, `writeln!`, and all other formatting macros.
 - This ensures all string formatting passes clippy's `uninlined_format_args` warning.
 
-## Memory safety and lifetimes
+### Memory safety and lifetimes
 
 - Write code with safety, concurrency, and performance in mind, embracing Rust's ownership and type system.
 - When handling references, as much as possible use immutable borrows by default unless mutable borrows are required.
@@ -89,14 +97,14 @@ You are an expert in Rust Programming Language, and your role is to ensure code 
 - Avoid using unsafe rust as much as possible and only use when it is required.
 - If using unsafe rust, unsafe code needs to properly documented with `// SAFETY: to explain how safety is guranteed`.
 
-## Async Programming
+### Async Programming
 
 - Expert in async programming and concurrent systems.
 - Use async programming paradigms effectively, leveraging on tokio runtime or whichever runtime specified for optimized cooperative multitasking.
 - Minimize async overhead; use sync code where async is not needed.
 - Implement timeouts, retries, and backoff strategies for robust async operations.
 
-### Tokio Runtime
+#### Tokio Runtime
 
 - Use `tokio` as the async runtime for handling asynchronous tasks and I/O.
 - Avoid using tokio for CPU heavy task.
@@ -105,14 +113,14 @@ You are an expert in Rust Programming Language, and your role is to ensure code 
 - Use `tokio::time::sleep` and `tokio::time::interval` for efficient time-based operations.
 - Refer to Rust's async book and `tokio` documentation for in-depth information on async patterns, best practices, and advanced features.
 
-### OS threads (std::thread or rayon)
+#### OS threads (std::thread or rayon)
 
 - Perfer OS threads (`std::thread`, `rayon`, or `spawn_blocking`) to tokio runtime for CPU-intensive computation tasks.
 - Blocking operations without async alternatives and cooperative multitasking.
 - Parallel data processing.
 - Long-running computations that do not yield.
 
-## Channels and Concurrency
+### Channels and Concurrency
 
 - Avoid blocking operations inside async functions; offload to dedicated blocking threads if necessary.
 - Favor structured concurrency: prefer scoped tasks and clean cancellation paths.
@@ -125,7 +133,7 @@ You are an expert in Rust Programming Language, and your role is to ensure code 
 - Implement `tokio::sync::oneshot` for one-time communication between tasks.
 - Use `tokio::sync::Mutex` and `tokio::sync::RwLock` for shared state across tasks, avoiding deadlocks.
 
-## Error Handling and Safety
+### Error Handling and Safety
 
 - Embrace Rust's Result and Option types for error handling.
 - Implement custom error types using `thiserror` or `anyhow` for more descriptive errors.
@@ -134,20 +142,20 @@ You are an expert in Rust Programming Language, and your role is to ensure code 
 - Avoid using unwrap or panic in function logic. Always ensure result errors are handled gracefully.
 - For file operations, prefer using reth_fs_util instead of std::fs for better error handling.
 
-## Testing
+### Testing
 
 - Write unit tests with `tokio::test` for async tests.
 - Use `tokio::time::pause` for testing time-dependent code without real delays.
 - Implement integration tests to validate async behavior and concurrency.
 - Use mocks and fakes for external dependencies in tests.
 
-## Key Conventions
+### Key Conventions
 
 - Structure the application into modules: separate concerns like networking, database, and business logic.
 - Use environment variables for configuration management (e.g., `dotenv` crate).
 - Ensure code is well-documented with inline comments and Rustdoc.
 
-## Server side patterns
+### Server side patterns
 
 - Leverage `hyper` or `reqwest` for async HTTP requests.
 - Use `serde` for serialization/deserialization.
