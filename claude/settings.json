@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo test)",
+      "Bash(cargo check)",
+      "Bash(cargo build)",
+      "Bash(make run)",
+      "Bash(make build)",
+      "Bash(just build)",
+      "Bash(make build-docker)",
+      "Bash(just build-docker)",
+      "Bash(make run)"
+    ]
+  },
+  "model": "opus",
+  "enabledPlugins": {
+    "rust-analyzer-lsp@claude-plugins-official": true
+  }
+}
