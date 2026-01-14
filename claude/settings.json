@@ -9,7 +9,9 @@
       "Bash(just build)",
       "Bash(make build-docker)",
       "Bash(just build-docker)",
-      "Bash(make run)"
+      "Bash(make run)",
+      "Bash(cargo tree:*)",
+      "Bash(git grep:*)"
     ]
   },
   "model": "opus",
