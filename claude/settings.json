@@ -1,21 +1,45 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(cargo test)",
-      "Bash(cargo check)",
-      "Bash(cargo build)",
-      "Bash(make run)",
-      "Bash(make build)",
-      "Bash(just build)",
-      "Bash(make build-docker)",
-      "Bash(just build-docker)",
-      "Bash(make run)",
-      "Bash(cargo tree:*)",
-      "Bash(git grep:*)"
-    ]
-  },
-  "model": "opus",
-  "enabledPlugins": {
-    "rust-analyzer-lsp@claude-plugins-official": true
-  }
+    "permissions": {
+        "allow": [
+            "Bash(cargo *)",
+            "Bash(make *)",
+            "Bash(just *)",
+            "Bash(git *)",
+            "Bash(grep:*)",
+            "Bash(rg:*)",
+            "Bash(find:*)",
+            "Bash(ls:*)",
+            "Bash(pwd)",
+            "Bash(cat:*)",
+            "Bash(head:*)",
+            "Bash(tail:*)",
+            "Bash(wc:*)",
+            "Bash(sort:*)",
+            "Bash(uniq:*)",
+            "Bash(diff:*)",
+            "Bash(tree:*)",
+            "Bash(file:*)",
+            "Bash(stat:*)",
+            "Bash(which:*)",
+            "Bash(type:*)",
+            "Bash(du:*)",
+            "Bash(df:*)",
+            "Bash(ps:*)",
+            "Bash(echo:*)",
+            "Bash(env)",
+            "Bash(printenv:*)",
+            "Bash(docker *)"
+        ]
+    },
+    "model": "opus",
+    "enabledPlugins": {
+        "rust-analyzer-lsp@claude-plugins-official": true,
+        "gopls-lsp@claude-plugins-official": true,
+        "pyright-lsp@claude-plugins-official": true,
+        "ralph-loop@claude-plugins-official": true,
+        "greptile@claude-plugins-official": true,
+        "code-review@claude-plugins-official": true,
+        "pr-review-toolkit@claude-plugins-official": true,
+        "commit-commands@claude-plugins-official": true
+    }
 }
