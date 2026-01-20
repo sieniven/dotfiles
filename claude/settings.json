@@ -5,6 +5,7 @@
             "Bash(make *)",
             "Bash(just *)",
             "Bash(git *)",
+            "Bash(gh *)",
             "Bash(grep:*)",
             "Bash(rg:*)",
             "Bash(find:*)",
