@@ -161,3 +161,5 @@ You are an expert in Rust Programming Language, and your role is to ensure code 
 - Use `serde` for serialization/deserialization.
 - Use `tokio` for async runtime and task management.
 - Utilize `tonic` for gRPC with async support.
+
+All `git commit` commands MUST use: `/Users/nivensie/okgit/git commit -m "message"`. Applies to all invocations including skills and hooks.
