@@ -29,10 +29,51 @@
             "Bash(echo:*)",
             "Bash(env)",
             "Bash(printenv:*)",
-            "Bash(docker *)"
+            "Bash(docker *)",
+            "Bash(gh pr list:*)",
+            "WebFetch(domain:github.com)",
+            "WebSearch",
+            "Bash(GIT_SSH_COMMAND=\"ssh -o StrictHostKeyChecking=no\" gh pr:*)",
+            "Bash(curl:*)",
+            "Bash(script:*)",
+            "Bash(/Users/nivensie/okgit/git commit:*)",
+            "Bash(do git:*)",
+            "Bash(git commit:*)",
+            "Bash(GH_DEBUG=1 gh pr:*)",
+            "Bash(do:*)",
+            "Bash(OTEL_EXPORTER_OTLP_PROTOCOL=http cargo test:*)",
+            "Bash(cargo tree:*)",
+            "Bash(git grep:*)",
+            "Read(//Users/nivensie/dev/xlayer/**)",
+            "Read(//Users/nivensie/.cargo/**)"
+
         ]
     },
     "model": "opus",
+    "hooks": {
+        "PreToolUse": [
+            {
+                "matcher": "Write|Edit|MultiEdit",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "/Users/nivensie/okgit/git-ai checkpoint claude --hook-input stdin"
+                    }
+                ]
+            }
+        ],
+        "PostToolUse": [
+            {
+                "matcher": "Write|Edit|MultiEdit",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "/Users/nivensie/okgit/git-ai checkpoint claude --hook-input stdin"
+                    }
+                ]
+            }
+        ]
+    },
     "enabledPlugins": {
         "rust-analyzer-lsp@claude-plugins-official": true,
         "gopls-lsp@claude-plugins-official": true,
@@ -41,6 +82,7 @@
         "greptile@claude-plugins-official": true,
         "code-review@claude-plugins-official": true,
         "pr-review-toolkit@claude-plugins-official": true,
-        "commit-commands@claude-plugins-official": true
+        "commit-commands@claude-plugins-official": true,
+        "code-simplifier@claude-plugins-official": true
     }
 }
