@@ -45,8 +45,12 @@
             "Bash(cargo tree:*)",
             "Bash(git grep:*)",
             "Read(//Users/nivensie/dev/xlayer/**)",
-            "Read(//Users/nivensie/.cargo/**)"
-
+            "Read(//Users/nivensie/.cargo/**)",
+            "Bash(cast *)",
+            "Bash(cd /Users/nivensie/dev/xlayer/*)",
+            "Bash(/Users/nivensie/dev/xlayer/*)",
+            "Bash(timeout *)",
+            "Bash(sleep *)"
         ]
     },
     "model": "opus",
