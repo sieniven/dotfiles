@@ -25,6 +25,7 @@ Your primary responsibilities are:
 
 Before starting the devnet:
 - Always check the current `.env` configuration to understand what components will be deployed
+- Rebuild xlayer-reth locally, and ensure the latest images are being used in the devnet configuration. To rebuild this, we can run `just build-docker` from the root of the xlayer-reth repository.
 - Verify that the configuration matches the testing requirements
 - If code changes were made to specific components, ensure those components are properly configured to be rebuilt or use the latest local images
 
@@ -79,6 +80,27 @@ When testing local code changes:
 4. **Validate end-to-end**: Ensure blocks are being produced, transactions are being processed, and the full pipeline is healthy.
 5. **Check for regressions**: Verify that unchanged components continue to function correctly.
 
+## Stress testing
+
+After the devnet is successfully launched and fully operational (blocks producing, sequencer and RPC in sync), run the ERC20 stress test:
+
+1. **Setup ERC20 addresses**: Run `/Users/nivensie/dev/xlayer/adventure/1-setup.sh`
+   - This deploys an ERC20 contract via `adventure evm bench erc20-init` against the local devnet RPC at `http://127.0.0.1:8123`
+   - Uses 20,000 pre-generated addresses from `./config/devnet/addr_20000_wmt`
+   - Extracts the deployed contract address and writes it to `.env` in the adventure directory
+
+2. **Run ERC20 benchmark**: Run the benchmark for **5 minutes** using `timeout`:
+   ```bash
+   cd /Users/nivensie/dev/xlayer/adventure && timeout 300 ./2-bench-erc20.sh
+   ```
+   - Reads `CONTRACT_ADDRESS` from the `.env` file created by step 1
+   - Executes `adventure evm bench erc20` with the fork6 configuration from `./config/poly_test/fork6_erc20.json`
+   - The benchmark runs indefinitely (continuous tx loop), so always wrap with `timeout 300` (5 minutes)
+   - After the benchmark completes, check the TPS output in the logs — target is 3000+ ERC20 TPS
+
+**Important**: Always run these scripts from the `/Users/nivensie/dev/xlayer/adventure/` directory, as they reference relative config paths. Never use `polycli` directly — always use the adventure scripts.
+
+
 ## Log Analysis Best Practices
 
 - Use `docker logs <container_name>` to view logs for specific containers
@@ -110,6 +132,16 @@ Before declaring a test successful:
 - Confirm no error-level logs are present in any critical component
 - If conductor is enabled, verify failover readiness
 - If flashblocks are enabled, verify flashblock-specific behavior on op-reth-rpc and confirm op-reth-rpc2 behavior matches its configuration
+
+## Devnet Cleanup
+
+When your task is complete (whether successful or not), ALWAYS perform the following cleanup steps in order:
+
+1. **Save logs**: Run `/Users/nivensie/dev/xlayer/xlayer-run/scripts/logs/save_logs.sh` to save all running component logs
+2. **Clean logs**: Run `/Users/nivensie/dev/xlayer/xlayer-run/scripts/logs/clean_logs.sh -d /Users/nivensie/dev/xlayer/xlayer-run/logs/` to clean up the saved logs
+3. **Stop devnet**: Run `make stop` from `/Users/nivensie/dev/xlayer/op-stack/xlayer/xlayer-toolkit/devnet/`
+
+This cleanup sequence is mandatory — never leave the devnet running after your task finishes.
 
 ## Error Recovery
 
@@ -173,7 +205,3 @@ Grep with pattern="<search term>" path="/Users/nivensie/.claude/agent-memory/xla
 Grep with pattern="<search term>" path="/Users/nivensie/.claude/projects/-Users-nivensie--claude/" glob="*.jsonl"
 ```
 Use narrow search terms (error messages, file paths, function names) rather than broad keywords.
-
-## MEMORY.md
-
-Your MEMORY.md is currently empty. When you notice a pattern worth preserving across sessions, save it here. Anything in MEMORY.md will be included in your system prompt next time.
