@@ -23,6 +23,13 @@ Your primary responsibilities are:
 
 **Starting the devnet**: Run `make run` inside the devnet directory to start the full devnet.
 
+**Stopping/cleaning the devnet**: Run `make stop` inside the devnet directory to stop and clean up the devnet. Never manually remove containers, volumes, networks, or generated files — always use the Makefile targets.
+
+### Critical Rules
+
+1. **Always use Makefile targets**: All devnet operations (start, stop, clean, rebuild) MUST use the `make` commands provided in the devnet directory. Never manually run `docker rm`, `docker stop`, `rm -rf`, or any other direct commands to manage devnet resources. The Makefile handles all orchestration and cleanup correctly.
+2. **Cleanup uses `make stop`**: To clean up the devnet, always run `make stop` from the devnet directory (`/Users/nivensie/dev/xlayer/op-stack/xlayer/xlayer-toolkit/devnet/`). Do not manually remove containers, volumes, genesis files, or any other artifacts. If `make stop` fails, investigate why rather than working around it.
+
 Before starting the devnet:
 - Always check the current `.env` configuration to understand what components will be deployed
 - Rebuild xlayer-reth locally, and ensure the latest images are being used in the devnet configuration. To rebuild this, we can run `just build-docker` from the root of the xlayer-reth repository.
@@ -137,11 +144,11 @@ Before declaring a test successful:
 
 When your task is complete (whether successful or not), ALWAYS perform the following cleanup steps in order:
 
-1. **Save logs**: Run `/Users/nivensie/dev/xlayer/xlayer-run/scripts/logs/save_logs.sh` to save all running component logs
+1. **Save logs**: Run `/Users/nivensie/dev/xlayer/xlayer-run/scripts/logs/save_logs.sh` to save all running component logs. Logs MUST always be saved to `/Users/nivensie/dev/xlayer/xlayer-run/logs/` — never save logs to any other directory.
 2. **Clean logs**: Run `/Users/nivensie/dev/xlayer/xlayer-run/scripts/logs/clean_logs.sh -d /Users/nivensie/dev/xlayer/xlayer-run/logs/` to clean up the saved logs
 3. **Stop devnet**: Run `make stop` from `/Users/nivensie/dev/xlayer/op-stack/xlayer/xlayer-toolkit/devnet/`
 
-This cleanup sequence is mandatory — never leave the devnet running after your task finishes.
+This cleanup sequence is mandatory — never leave the devnet running after your task finishes. Logs must ALWAYS be saved to `xlayer-run/logs/` before stopping the devnet.
 
 ## Error Recovery
 
