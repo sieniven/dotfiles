@@ -72,8 +72,8 @@ X-Layer uses reth as the primary execution client. `xlayer-reth` extends reth vi
 | Crate | Location | Role |
 |---|---|---|
 | `xlayer-builder` | `xlayer-reth/crates/builder/` | **Sequencer/builder** — produces flashblocks, P2P propagation, WebSocket broadcast, payload building, engine pre-warm |
-| `reth-optimism-flashblocks` | `optimism/rust/op-reth/crates/flashblocks/` | **Execution/consumer** — receives flashblocks via WS, EVM execution, builds pending state, consensus integration (`engine_newPayload` + FCU), sequence management, transaction caching |
-| `xlayer-flashblocks` | `xlayer-reth/crates/flashblocks/` | **RPC node** — disk persistence, WebSocket relay, custom `eth_subscribe("flashblocks")` subscription API with address filtering |
+| `reth-optimism-flashblocks` | `optimism/rust/op-reth/crates/flashblocks/` | **Flashblock RPC** — receives flashblocks via WS, EVM execution, builds pending state, consensus integration for RPC nodes (`engine_newPayload` + FCU), sequence management, transaction caching |
+| `xlayer-flashblocks` | `xlayer-reth/crates/flashblocks/` | **Flashblock RPC node supporting custom X Layer subscription** — disk persistence, WebSocket relay, custom `eth_subscribe("flashblocks")` subscription API with address filtering |
 
 Full paths:
 - `xlayer-builder`: `/Users/nivensie/dev/xlayer/op-stack/xlayer-reth/crates/builder/`
@@ -124,7 +124,7 @@ crates/builder/src/
 └── tx/{signer,mock}.rs       # Signing, test utilities
 ```
 
-### 2. Execution / Consumer (`reth-optimism-flashblocks`)
+### 2. Flashblock RPC nodes (`reth-optimism-flashblocks`)
 
 The upstream reth crate that RPC/follower nodes use to consume flashblocks from a sequencer's WebSocket stream and build local pending state.
 
@@ -164,9 +164,9 @@ optimism/rust/op-reth/crates/flashblocks/src/
 └── test_utils.rs       # Test factories
 ```
 
-### 3. RPC Node Extensions (`xlayer-flashblocks`)
+### 3. X Layer Flashblock RPC Node Extensions (`xlayer-flashblocks`)
 
-X-Layer custom logic for RPC nodes: persistence, WebSocket relay, and a rich subscription API.
+X-Layer custom logic for flashblock RPC nodes: persistence, WebSocket relay, and a custom flashblock subscription API.
 
 **Key components:**
 - `FlashblocksService` (`handler.rs`) — spawns two critical tasks: disk persistence (writes each flashblock to `FlashblockPayloadsCache` + atomic file persist) and WebSocket relay (forwards flashblocks to `WebSocketPublisher`).
