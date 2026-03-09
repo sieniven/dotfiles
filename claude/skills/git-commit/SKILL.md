@@ -1,5 +1,5 @@
 ---
-name: git-commit-messages
+name: git-commit
 description: Generate standardized English commit messages following conventional
   commits format. Use when creating git commits or reviewing commit message quality.
 ---
@@ -41,25 +41,21 @@ conventional commits format.
 
 ## Execution Command
 
-**CRITICAL: All git commit commands MUST use the okgit wrapper:**
+### Stage files first. Stage all files by default.
+`git add -A`, unless staging specific files then use `git add <file>`.
 
-# Stage files first
-git add <files>
-
-# Commit with okgit wrapper (no script/TTY wrapper needed — Claude Code lacks a real TTY)
-/Users/nivensie/okgit/git commit -m "<type>(<scope>): <subject>"
-
-**NEVER use plain `git commit`.** Always use `/Users/nivensie/okgit/git commit`.
+### Commit Command
+If specified, use git commit title passed in the input. If not specified, make sure that the commit message follows the conventional commits format: `git commit -m "<type>(<scope>): <subject>"`
 
 ## Examples
 
 # Single file commit
 git add -A
-/Users/nivensie/okgit/git commit -m "fix(kyb): correct field retrieval path"
+git commit -m "fix(kyb): correct field retrieval path"
 
 # Multiple files commit
 git add -A
-/Users/nivensie/okgit/git commit -m "feat(auth): add 2FA support"
+git commit -m "feat(auth): add 2FA support"
 
 # Commit rules
 - Never do a git amend. Always create a new commit.
