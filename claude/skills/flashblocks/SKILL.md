@@ -1,13 +1,13 @@
 ---
 name: flashblocks
 description: Flashblocks related engineering for X-Layer. Use for developing
-  sub-block incremental payloads spanning the builder (xlayer-builder), consumer
-  (reth-optimism-flashblocks), and RPC node (xlayer-flashblocks) crates.
+  sub-block incremental payloads spanning the builder (xlayer-builder) and
+  RPC node (xlayer-flashblocks) crates.
 ---
 
 # X-Layer Flashblocks Skill
 
-You are an expert blockchain protocol engineer and Rust developer specializing in X-Layer's flashblocks development — an OP Stack-based Layer 2 EVM blockchain. Flashblocks are sub-block incremental payloads providing near-instant transaction confirmation while maximizing sequencer throughput (gas/sec). The system spans three crates across two repositories — there is no rollup-boost or external builder dependency.
+You are an expert blockchain protocol engineer and Rust developer specializing in X-Layer's flashblocks development — an OP Stack-based Layer 2 EVM blockchain. Flashblocks are sub-block incremental payloads providing near-instant transaction confirmation while maximizing sequencer throughput (gas/sec). The system spans two crates in `xlayer-reth` — there is no rollup-boost or external builder dependency.
 
 ---
 
@@ -72,12 +72,10 @@ X-Layer uses reth as the primary execution client. `xlayer-reth` extends reth vi
 | Crate | Location | Role |
 |---|---|---|
 | `xlayer-builder` | `xlayer-reth/crates/builder/` | **Sequencer/builder** — produces flashblocks, P2P propagation, WebSocket broadcast, payload building, engine pre-warm |
-| `reth-optimism-flashblocks` | `optimism/rust/op-reth/crates/flashblocks/` | **Flashblock RPC** — receives flashblocks via WS, EVM execution, builds pending state, consensus integration for RPC nodes (`engine_newPayload` + FCU), sequence management, transaction caching |
-| `xlayer-flashblocks` | `xlayer-reth/crates/flashblocks/` | **Flashblock RPC node supporting custom X Layer subscription** — disk persistence, WebSocket relay, custom `eth_subscribe("flashblocks")` subscription API with address filtering |
+| `xlayer-flashblocks` | `xlayer-reth/crates/flashblocks/` | **RPC node** — state cache overlay, sequence execution with state root computation, persistence, WebSocket relay, custom `eth_subscribe("flashblocks")` subscription API |
 
 Full paths:
 - `xlayer-builder`: `/Users/nivensie/dev/xlayer/op-stack/xlayer-reth/crates/builder/`
-- `reth-optimism-flashblocks`: `/Users/nivensie/dev/xlayer/op-stack/xlayer/optimism/rust/op-reth/crates/flashblocks/`
 - `xlayer-flashblocks`: `/Users/nivensie/dev/xlayer/op-stack/xlayer-reth/crates/flashblocks/`
 
 ---
@@ -124,47 +122,7 @@ crates/builder/src/
 └── tx/{signer,mock}.rs       # Signing, test utilities
 ```
 
-### 2. Flashblock RPC nodes (`reth-optimism-flashblocks`)
-
-The upstream reth crate that RPC/follower nodes use to consume flashblocks from a sequencer's WebSocket stream and build local pending state.
-
-**Key components:**
-- `FlashBlockService` (`service.rs`) — main event loop (`tokio::select!`): processes incoming flashblocks, manages build jobs, reconciles canonical blocks. Three events: incoming flashblock, build job complete, canonical block notification.
-- `SequenceManager` (`cache.rs`) — ring buffer (3 slots) of recently completed sequences. Manages build ticket selection: canonical pending > cached sequence > speculative with pending parent.
-- `FlashBlockBuilder` (`worker.rs`) — EVM execution on `spawn_blocking`. Uses reth's `BlockBuilder` pattern (`builder_for_next_block()` → `execute_transaction()` → `finish()`). For cached prefix builds, uses lower-level `create_executor()` to skip pre-execution changes.
-- `TransactionCache` (`tx_cache.rs`) — caches cumulative `BundleState`, receipts, and execution metadata from previous flashblock builds within the same block. Uses prefix matching: only resumes when cached tx list is a prefix of incoming list.
-- `PendingStateRegistry` (`pending_state.rs`) — bounded HashMap (64 entries) of `PendingBlockState`. Enables speculative building when flashblocks for block N+1 arrive before canonical block N. Each entry stores `canonical_anchor_hash` pointing back to the last canonical block.
-- `FlashBlockConsensusClient` (`consensus.rs`) — submits `engine_newPayload` (when state_root is non-zero) and `engine_forkChoiceUpdated` using V5 API.
-- `FlashblockSequenceValidator` (`validation.rs`) — classifies incoming flashblocks: `NextInSequence`, `FirstOfNextBlock`, `Duplicate`, `NonSequentialGap`, `InvalidNewBlockIndex`.
-- `ReorgDetector` / `CanonicalBlockReconciler` (`validation.rs`) — detects reorgs via block fingerprints, determines reconciliation strategy: `CatchUp`, `HandleReorg`, `DepthLimitExceeded`, `Continue`.
-- WebSocket layer (`ws/`) — `WsFlashBlockStream` connects to sequencer WS, decodes brotli/JSON via `FlashBlockDecoder`, auto-reconnects on failure.
-
-**Channel outputs:**
-- `PendingBlockRx<N>` (`watch`) — latest pending block for `eth_getBlock("pending")`
-- `FlashBlockCompleteSequenceRx` (`broadcast`) — completed sequences for consensus submission
-- `FlashBlockRx` (`broadcast`) — raw individual flashblocks for downstream subscription APIs
-- `InProgressFlashBlockRx` (`watch`) — build-in-progress signaling
-
-**Epoch-based invalidation:** `state_epoch` counter increments on reorg/catch-up, invalidating all in-flight build results.
-
-**Module structure:**
-```
-optimism/rust/op-reth/crates/flashblocks/src/
-├── lib.rs              # FlashblocksListeners, channel type aliases
-├── service.rs          # FlashBlockService (main orchestrator)
-├── cache.rs            # SequenceManager (ring buffer), BuildTicket, BuildCandidate
-├── worker.rs           # FlashBlockBuilder (EVM execution)
-├── tx_cache.rs         # TransactionCache (incremental prefix caching)
-├── pending_state.rs    # PendingStateRegistry (speculative chaining)
-├── validation.rs       # Sequence validation, reorg detection, reconciliation
-├── consensus.rs        # FlashBlockConsensusClient (engine API)
-├── payload.rs          # FlashBlock type alias, PendingFlashBlock
-├── sequence.rs         # FlashBlockPendingSequence, FlashBlockCompleteSequence
-├── ws/{mod,decoding,stream}.rs  # WebSocket stream, brotli/JSON decoding
-└── test_utils.rs       # Test factories
-```
-
-### 3. X Layer Flashblock RPC Node Extensions (`xlayer-flashblocks`)
+### 2. X Layer Flashblock RPC Node (`xlayer-flashblocks`)
 
 X-Layer's flashblock RPC node crate: state cache overlay, sequence execution with state root computation, persistence, WebSocket relay, and custom subscription API.
 
@@ -265,10 +223,6 @@ The `FlashblockSequenceValidator` uses reth's `PayloadProcessor` and selects str
 
 **Consistency invariant**: Single `get_overlay_data()` call provides the snapshot for `StateProviderBuilder`, `OverlayStateProviderFactory`, and `spawn_deferred_trie_task`. `get_parent_lazy_overlay()` borrows the snapshot (no re-query), eliminating a race window where `handle_canonical_block()` could advance `canon_info` between reads.
 
-### Consumer Side (`reth-optimism-flashblocks`)
-
-`FlashBlockConsensusClient` submits `engine_newPayload` only when `state_root != B256::ZERO`. FCU is always sent.
-
 **Rule**: State root MUST be computed before committing to the engine tree. Never delegate to an external EL.
 
 ---
@@ -294,10 +248,10 @@ Target: `engine_cache_hit_rate > 99%`, `engine_newPayload` p50 < 50ms, p95 < 250
 Goal: Transaction execution never blocks the async event loop.
 
 Key design:
-- **Blocking thread isolation** — `OpPayloadBuilder::try_build()` runs on `spawn_blocking` (builder); `FlashBlockBuilder` uses `TaskExecutor::spawn_blocking()` (consumer)
-- **Reth EVM path** — standard `evm.transact()` with `CachedReads` overlay (builder); `BlockBuilder` pattern with `execute_transaction()` (consumer)
+- **Blocking thread isolation** — `OpPayloadBuilder::try_build()` runs on `spawn_blocking` (builder); `FlashblockSequenceValidator` execution runs on `PayloadProcessor`'s blocking threads (RPC node)
+- **Reth EVM path** — standard `evm.transact()` with `CachedReads` overlay (builder); `BlockExecutor` pattern with `execute_transaction()` + `PayloadProcessor` prewarming (RPC node)
 - **Incremental state** — `BundleState` with `BundleRetention::Reverts` allows incremental flashblock builds; transition state snapshotted/restored between flashblocks (builder)
-- **Transaction prefix caching** — `TransactionCache` provides warm `BundleState` prestate for prefix reuse within a block, avoiding redundant execution (consumer)
+- **Prefix execution caching** — `PrefixExecutionMeta` provides warm `CachedReads` and bundle prestate for prefix reuse within a block, avoiding redundant execution (RPC node)
 - **DA-aware execution** — per-tx DA size check (`OpDAConfig`) prevents DA overflow mid-flashblock
 
 ### 3. State Trie & Merklization Speed (Reth Alignment)
@@ -307,10 +261,12 @@ Goal: Minimize state root computation latency.
 Key design:
 - **`state_root_with_updates(hashed_state)`** — uses `reth_trie` for incremental merkle trie updates via `StateRootProvider`
 - **`hashed_post_state(&bundle_state)`** — only hashes modified accounts/storage, not full state
-- **Transition save/restore** — `merge_transitions` + restore avoids re-merging the full bundle on each flashblock
-- **Async resolution** — state root computed on separate blocking thread while fallback payload returned immediately
-- **Engine pre-warm with trie data** — async state root sends `BuiltPayload` event with `hashed_state` and `trie_updates` so engine tree applies them directly
-- **Consumer-side auto state root** — triggered near expected final flashblock index (based on `block_time`)
+- **Transition save/restore** — `merge_transitions` + restore avoids re-merging the full bundle on each flashblock (builder)
+- **Async resolution** — state root computed on separate blocking thread while fallback payload returned immediately (builder)
+- **Engine pre-warm with trie data** — async state root sends `BuiltPayload` event with `hashed_state` and `trie_updates` so engine tree applies them directly (builder)
+- **Three SR strategies on RPC node** — `StateRootTask` (sparse trie concurrent with execution), `Parallel` (`ParallelStateRoot`), `Synchronous` (serial fallback). Timeout-race mechanism ensures bounded latency.
+- **Deferred trie data** — `DeferredTrieData::pending` + background `compute_trie_input_task` sorts and caches trie data asynchronously; consumers get result from task or fallback computation
+- **Changeset caching** — `ChangesetCache` stores trie changesets per block for efficient `OverlayStateProviderFactory` construction
 
 ---
 
@@ -350,7 +306,7 @@ Key design:
 - **Async**: `tokio`, `tokio-tungstenite` (WebSocket)
 - **RPC**: `jsonrpsee` (subscription API)
 - **Serialization**: `serde`, `serde_json`
-- **Caching**: `moka` (LRU), `ringbuffer` (sequence ring buffer)
+- **Caching**: `moka` (LRU)
 - **Compression**: `brotli` (flashblock decoding)
 - **X-Layer**: `xlayer-trace-monitor`
 - **No `op-rbuilder` dependency** — fully custom builder
@@ -438,4 +394,4 @@ Every implementation follows this order:
 7. Verify no unintended reorgs across flashblock boundaries
 8. Validate P2P propagation between sequencer and follower nodes
 9. Test `eth_subscribe("flashblocks")` with address filtering on RPC node
-10. Validate pending block state reflects latest flashblocks on consumer nodes
+10. Validate pending block state reflects latest flashblocks on RPC nodes
