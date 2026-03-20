@@ -166,28 +166,55 @@ optimism/rust/op-reth/crates/flashblocks/src/
 
 ### 3. X Layer Flashblock RPC Node Extensions (`xlayer-flashblocks`)
 
-X-Layer custom logic for flashblock RPC nodes: persistence, WebSocket relay, and a custom flashblock subscription API.
+X-Layer's flashblock RPC node crate: state cache overlay, sequence execution with state root computation, persistence, WebSocket relay, and custom subscription API.
 
 **Key components:**
-- `FlashblocksService` (`handler.rs`) — spawns two critical tasks: disk persistence (writes each flashblock to `FlashblockPayloadsCache` + atomic file persist) and WebSocket relay (forwards flashblocks to `WebSocketPublisher`).
-- `FlashblocksPubSub` (`subscription.rs`) — JSON-RPC `eth_subscribe("flashblocks", filter)` with:
-  - Address filtering (sender, recipient, log-emitting addresses)
-  - Optional transaction enrichment (`tx_info: bool`)
-  - Optional receipt enrichment (`tx_receipt: bool`)
-  - Header streaming (`header_info: bool`)
-  - Transaction deduplication via `moka` LRU cache (10,000 entries)
-  - Configurable max subscribed addresses (default 1000)
-- Data types (`pubsub.rs`) — `FlashblockSubscriptionKind`, `FlashblocksFilter`, `SubTxFilter`, `FlashblockStreamEvent` (tagged: `Header` | `Transaction`), `EnrichedTransaction`.
 
-**Wiring** (in `main.rs`): When NOT in sequencer mode, `FlashblocksService` is created with the `FlashBlockRx` from the upstream service. If `--xlayer.flashblocks-subscription` is enabled, `FlashblocksPubSub` replaces the standard `eth` pubsub module.
+#### State Cache (`cache/`)
+- `FlashblockStateCache<N>` (`cache/mod.rs`) — top-level cache: `Arc<RwLock<Inner>>` + `ChangesetCache`. Overlay on canonical chainstate serving confirmed flashblocks (ahead of canonical tip) and pending state.
+- `FlashblockStateCacheInner` — pending_cache + `ConfirmCache` + confirm_height + canon_info + `watch` channel for pending sequence subscriptions.
+- `ConfirmCache<N>` (`cache/confirm.rs`) — BTreeMap by number, HashMap by hash, tx_hash→CachedTxInfo index.
+- `PendingSequence<N>` (`cache/pending.rs`) — in-progress flashblock sequence: `PendingBlock` + `PrefixExecutionMeta` + tx index.
+- `get_overlay_data(hash)` — single `RwLock` read returning `(Vec<ExecutedBlock>, SealedHeader, canon_hash)` for validator's state provider construction.
+
+**Lifecycle:**
+1. `handle_pending_sequence()` — auto-commits current pending to confirm cache if height advanced; otherwise replaces pending
+2. `handle_canonical_block(canon_info, reorg)` — updates heights, evicts confirm cache ≤ height, flushes on stale/reorg, evicts changeset cache
+
+#### Execution Pipeline (`execution/`)
+- `FlashblockSequenceValidator` (`execution/validator.rs`) — executes incoming flashblock transaction sequences using reth's `PayloadProcessor`. Supports three build scenarios: fresh canonical, fresh non-canonical (with overlay blocks), and incremental (prefix reuse via `PrefixExecutionMeta`).
+- **State root computation** — three strategies selected via `TreeConfig`:
+  - **`StateRootTask`**: `PayloadProcessor::spawn()` with multiproof + sparse trie pipeline concurrent with execution. `await_state_root_with_timeout()` races task against sequential fallback.
+  - **`Parallel`**: `PayloadProcessor::spawn_cache_exclusive()` + post-execution `ParallelStateRoot::incremental_root_with_updates()`.
+  - **`Synchronous`**: fallback `StateRoot::root_with_updates()` via `database_provider_ro()`.
+- **Consistency invariant**: single `get_overlay_data()` call provides the snapshot for `StateProviderBuilder`, `OverlayStateProviderFactory`, and `spawn_deferred_trie_task`. `get_parent_lazy_overlay()` borrows the snapshot (no re-query).
+- **Deferred trie task**: background `DeferredTrieData` computation + changeset caching via `ChangesetCache`.
+- `assemble_flashblock` (`execution/assemble.rs`) — block assembly from pre-computed roots (state, tx, receipt, logs bloom).
+
+#### Service Layer
+- `FlashblocksRpcService` (`service.rs`) — WS stream consumer, processes incoming `OpFlashblockPayload` messages. Spawns persistence and relay tasks.
+- `handle.rs` — persistence (disk writes) and WebSocket relay (forwards flashblocks to `WebSocketPublisher`).
+- `FlashblocksPubSub` (`subscription/`) — JSON-RPC `eth_subscribe("flashblocks", filter)` with address filtering, tx/receipt enrichment, header streaming, deduplication via `moka` LRU cache.
 
 **Module structure:**
 ```
 xlayer-reth/crates/flashblocks/src/
-├── lib.rs              # Re-exports
-├── handler.rs          # FlashblocksService (persistence + WS relay)
-├── pubsub.rs           # Subscription data types and filters
-└── subscription.rs     # FlashblocksPubSub JSON-RPC API
+├── lib.rs              # Public exports: FlashblockStateCache, PendingSequence, CachedTxInfo, etc.
+├── cache/
+│   ├── mod.rs          # FlashblockStateCache<N> + FlashblockStateCacheInner
+│   ├── confirm.rs      # ConfirmCache<N>
+│   ├── pending.rs      # PendingSequence<N>
+│   ├── raw.rs          # RawFlashblocksCache (pre-execution payload accumulation)
+│   └── utils.rs        # block_from_bar helper
+├── execution/
+│   ├── mod.rs          # BuildArgs, PrefixExecutionMeta, StateRootStrategy, FlashblockReceipt, OverlayProviderFactory
+│   ├── validator.rs    # FlashblockSequenceValidator (execution + state root + commit)
+│   └── assemble.rs     # assemble_flashblock (block from pre-computed roots)
+├── handle.rs           # Persistence + WS relay task handles
+├── service.rs          # FlashblocksRpcService (WS consumer + event loop)
+├── subscription/       # RPC subscription (pubsub + JSON-RPC)
+├── ws/                 # WebSocket stream + brotli/JSON decoding
+└── test_utils.rs       # Test helpers
 ```
 
 ---
@@ -205,7 +232,9 @@ Uses types from `op-alloy-rpc-types-engine`:
 
 ---
 
-## State Root Computation (Builder — Three Modes)
+## State Root Computation
+
+### Builder Side (`xlayer-builder`) — Three Modes
 
 1. **Per-flashblock sync** (`disable_state_root = false`): Each flashblock calls `build_block(calculate_state_root=true)`. Inline: `state.merge_transitions()` → `hashed_post_state()` → `state_root_with_updates()`. Transition state is saved/restored for incremental builds.
 
@@ -213,7 +242,32 @@ Uses types from `op-alloy-rpc-types-engine`:
 
 3. **Async on resolution** (`disable_async_calculate_state_root = false`): On `getPayload`, if best payload has zero state root, `resolve_zero_state_root` spawns on a blocking thread. Returns fallback payload immediately; async result pre-warms engine tree via `Events::BuiltPayload`.
 
-**Consumer side**: `FlashBlockConsensusClient` submits `engine_newPayload` only when `state_root != B256::ZERO`. FCU is always sent.
+### RPC Node Validator Side (`xlayer-flashblocks`) — Three Strategies
+
+The `FlashblockSequenceValidator` uses reth's `PayloadProcessor` and selects strategy via `TreeConfig`:
+
+| Strategy | `PayloadProcessor` method | SR computation |
+|---|---|---|
+| `StateRootTask` | `spawn()` | Multiproof + sparse trie pipeline concurrent with execution |
+| `Parallel` | `spawn_cache_exclusive()` | Post-execution `ParallelStateRoot::incremental_root_with_updates()` |
+| `Synchronous` | `spawn_cache_exclusive()` | Post-execution `StateRoot::root_with_updates()` via `database_provider_ro()` |
+
+**Strategy selection** (`plan_state_root_computation`):
+- `state_root_fallback() == true` → `Synchronous`
+- `use_state_root_task() == true` → `StateRootTask`
+- else → `Parallel`
+
+**`StateRootTask` timeout race** (`await_state_root_with_timeout`):
+- If no timeout: blocks on `handle.state_root()`
+- If timeout configured: waits up to timeout, then spawns serial fallback on `spawn_blocking`. Races both channels in 10ms poll loop. Task result or serial result — whichever finishes first wins. If StateRootTask disconnects, falls through to serial.
+
+**Shared inputs**: All strategies use the same `OverlayStateProviderFactory` (anchored at `anchor_hash` from single `get_overlay_data()` snapshot) and `hashed_state = provider.hashed_post_state(&output.state)`. If both task and parallel fail, `compute_state_root_serial()` is the final synchronous fallback.
+
+**Consistency invariant**: Single `get_overlay_data()` call provides the snapshot for `StateProviderBuilder`, `OverlayStateProviderFactory`, and `spawn_deferred_trie_task`. `get_parent_lazy_overlay()` borrows the snapshot (no re-query), eliminating a race window where `handle_canonical_block()` could advance `canon_info` between reads.
+
+### Consumer Side (`reth-optimism-flashblocks`)
+
+`FlashBlockConsensusClient` submits `engine_newPayload` only when `state_root != B256::ZERO`. FCU is always sent.
 
 **Rule**: State root MUST be computed before committing to the engine tree. Never delegate to an external EL.
 
