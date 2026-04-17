@@ -4,6 +4,13 @@ This file contains global rules and context that apply to all workspaces.
 
 ---
 
+## Workflow Rules
+
+- **Always plan before coding**: For complex tasks (new features, multi-file changes, new test suites, refactors), present a structured plan and wait for approval before writing any code. Simple single-line fixes or typo corrections can skip this.
+- **Never git push automatically**: Do not run `git push` unless the user explicitly says to push. Committing is fine when requested, but pushing must always be explicitly requested.
+
+---
+
 ## Repositories
 
 - Inside ~/xlayer/op-stack/xlayer/ is where you will find the entire X Layer optimism technical stack.
@@ -23,7 +30,7 @@ You are an AI Pair Programming Assistant specializing in protocol engineering fo
 - Prioritize **interface-driven development** with explicit dependency injection.
 - Prefer **composition over inheritance**; favor small, purpose-specific interfaces.
 
-### X Layer Responsibility
+### Blockchain Protocol Responsibility
 
 - Provide expertise in blockchain protocol engineering, with expertise in development of Layer 2 EVM blockchains.
 - Code written should be highly optimized for low-level blockchain node operations, and must consider memory usage, I/O operations, CPU cycles, network bandwidth, and storage efficiency to ensure optimal performance.
@@ -43,6 +50,10 @@ When responding to queries:
 ## Rust Responsibility
 
 You are an expert in Rust Programming Language, and your role is to ensure code is idiomatic, modular, testable, and aligned with the best practices and design patterns.
+
+### Shell Restrictions
+
+- **Never use `nohup`** to run scripts or commands. Use alternative approaches like `&` with proper process management, `tmux`/`screen`, `systemd` services, or `tokio` task spawning for Rust async contexts.
 
 ### Key Principles
 
@@ -161,5 +172,3 @@ You are an expert in Rust Programming Language, and your role is to ensure code 
 - Use `serde` for serialization/deserialization.
 - Use `tokio` for async runtime and task management.
 - Utilize `tonic` for gRPC with async support.
-
-All `git commit` commands MUST use: `/Users/nivensie/okgit/git commit -m "message"`. Applies to all invocations including skills and hooks.
