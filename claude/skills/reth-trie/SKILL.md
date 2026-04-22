@@ -19,15 +19,19 @@ You are an expert in reth's Merkle Patricia Trie (MPT) system, with deep knowled
 | `~/dev/xlayer/op-stack/xlayer/reth/` | Reth execution client (upstream) |
 
 Key crate paths (all relative to `reth/crates/`):
+
 - `trie/sparse/` — Sparse trie core implementation
-- `trie/parallel/` — Parallel state root and proof worker pools
-- `trie/common/` — Shared trie types (`TrieInput`, `HashedPostState`, `TrieUpdates`)
+- `trie/parallel/` — Parallel state root and proof worker pools (`ProofWorkerHandle`, `ProofTaskCtx`)
+- `trie/common/` — Shared trie types (`TrieInput`, `HashedPostState`, `TrieUpdates`, `DecodedMultiProof`)
 - `trie/db/` — Database-backed trie cursors and changeset cache
-- `trie/trie/` — Walker, proof, hash builder
-- `engine/tree/src/tree/payload_processor/` — Sparse trie task, multiproof task, payload orchestration
+- `trie/trie/` — Walker, proof, hash builder, `TrieNodeIter`
+- `engine/tree/src/tree/payload_processor/` — Sparse trie task, multiproof task, prewarm task, payload orchestration
+- `engine/tree/src/tree/payload_processor/prewarm.rs` — Speculative tx execution + `PrefetchProofs` dispatch
 - `engine/tree/src/tree/payload_validator.rs` — Block validation entry point, state root strategy
 - `chain-state/src/` — `DeferredTrieData`, `LazyOverlay`, `ExecutedBlock`
 - `storage/provider/src/providers/state/overlay.rs` — `OverlayStateProviderFactory`
+
+For a detailed end-to-end workflow walkthrough, see [workflow.md](workflow.md).
 
 ---
 
@@ -183,15 +187,24 @@ Multiproofs are the mechanism by which trie nodes are loaded into the sparse tri
   - **Control channel** (`rx`): `PrefetchProofs`, `StateUpdate`, `EmptyProof`, `FinishedStateUpdates`
   - **Proof result channel** (`proof_result_rx`): `ProofResultMessage` from workers
 
+**Dual Input Sources** (concurrent with execution):
+
+- **Prewarm task** → `PrefetchProofs`: speculative proof targets from parallel tx execution on stale state (runs ahead of real execution)
+- **Block executor** → `StateUpdate`: authoritative per-tx state diffs via `state_hook()` (sequential)
+
 **Message Flow**:
 ```
+Prewarm (speculative) --PrefetchProofs--> MultiProofTask
 Execution (per-tx state_hook) --StateUpdate--> MultiProofTask
                                                   |
                               +-------------------+
                               | get_proof_targets()
                               | dedup vs fetched_proof_targets
                               v
-                     dispatch_account_multiproof() / dispatch_storage_proof()
+                     If all targets already fetched:
+                       EmptyProof (zero worker cost)
+                     Else:
+                       dispatch_account_multiproof()
                               |
                               v
                      ProofWorkerHandle --jobs--> Worker Pools
@@ -220,11 +233,24 @@ Execution (per-tx state_hook) --StateUpdate--> MultiProofTask
 - `*_available_workers: Arc<AtomicUsize>` — tracks idle worker count
 - Workers use `ProofTaskCtx<Factory>` with database cursors for trie traversal
 
-**Worker Flow**:
-1. Receive job (account multiproof or storage proof request)
-2. Access DB via `ProofTaskCtx` → `OverlayStateProviderFactory` → composite state view
-3. Compute multiproof using `StorageProof::new_hashed()` or `AccountProof`
-4. Send `ProofResultMessage` back via crossbeam channel
+**Worker Flow** (account worker, `build_account_multiproof_with_storage_roots()`):
+
+1. Each worker holds a **read-only DB transaction** opened at startup against the pre-block state (`OverlayStateProviderFactory`). All workers see the same immutable trie — no race conditions.
+2. **Fan out storage proofs**: dispatch storage proof jobs to the storage worker pool for all target accounts, receiving `CrossbeamReceiver` handles back immediately.
+3. **Full sorted trie scan** via `TrieNodeIter` (merges `TrieWalker` + `HashedCursor`):
+   - `TrieWalker` scans persisted intermediate nodes (`BranchNodeCompact`) in lexicographic order
+   - `HashedCursor` scans hashed accounts table in lexicographic order
+   - At each branch: if subtree is unchanged (hash flag set, no prefix_set match) → yield `TrieElement::Branch(key, hash)` (skip entire subtree)
+   - Otherwise descend and yield `TrieElement::Leaf(hashed_address, account)`
+4. **Feed into `HashBuilder`** (from `alloy_trie`) with a `ProofRetainer`:
+   - `Branch` → `hash_builder.add_branch(key, hash, ...)` — reuse pre-computed hash as-is
+   - `Leaf` → block on storage proof receiver for storage_root, encode `TrieAccount{nonce, balance, storage_root, code_hash}` as RLP, then `hash_builder.add_leaf(path, rlp)`
+   - `HashBuilder` processes the sorted stream and computes hashes when it moves past a subtree prefix (all entries under that prefix have been seen)
+   - `ProofRetainer` captures intermediate trie nodes along target account paths
+5. Call `hash_builder.root()` to finalize, then `take_proof_nodes()` to extract `DecodedProofNodes`
+6. Send `ProofResultMessage { sequence_number, result: ProofResult(DecodedMultiProof), state }` back via crossbeam channel
+
+**Important**: The `HashBuilder` reconstructs the **pre-block** trie structure to extract proof nodes. It does NOT compute post-transaction hashes. The actual new state root is computed later by the sparse trie.
 
 ### MultiProofTargetsV2
 
@@ -503,6 +529,10 @@ PayloadProcessor::spawn()
 7. **Proof sequencer preserves ordering**: Despite parallel proof generation, sparse trie updates are applied in transaction execution order to ensure deterministic state roots.
 
 8. **`Arc::try_unwrap` optimization**: When sorting deferred data, if only one reference to the Arc exists, it moves the data in-place instead of cloning.
+
+9. **Workers are read-only against pre-block state**: All proof workers share the same `OverlayStateProviderFactory` snapshot opened at block start. They never see each other's results or post-transaction state. This eliminates race conditions — overlapping trie paths from different workers simply produce duplicate proof nodes that are deduplicated at reveal time by `revealed_account_paths`.
+
+10. **New intermediate hashes computed once, at the end**: Proof workers extract pre-block trie structure (existing nodes). The sparse trie applies all leaf updates, then computes all new intermediate hashes in a single pass during `root()`. No intermediate hashes are computed speculatively or in parallel across workers.
 
 ---
 
