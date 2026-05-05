@@ -7,7 +7,8 @@ This file contains global rules and context that apply to all workspaces.
 ## Workflow Rules
 
 - **Always plan before coding**: For complex tasks (new features, multi-file changes, new test suites, refactors), present a structured plan and wait for approval before writing any code. Simple single-line fixes or typo corrections can skip this.
-- **Never git push automatically**: Do not run `git push` unless the user explicitly says to push. Committing is fine when requested, but pushing must always be explicitly requested.
+- **Never git commit automatically**: Do not run `git commit` unless the user explicitly asks in the current turn. A prior `/git-commit` invocation or "commit" approval does NOT carry forward — if the work changes after that approval, ask again before committing. When in doubt, stop and ask.
+- **Never git push automatically**: Do not run `git push` unless the user explicitly says to push in the current turn. Prior push approvals do not carry forward.
 
 ---
 
