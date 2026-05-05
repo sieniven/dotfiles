@@ -1,5 +1,5 @@
 ---
-name: lark-tech-doc-writer
+name: lark-tech-doc
 description: "Write technical documents and architecture diagrams following team documentation standards for Lark. Use when the user asks to write a technical document, design document, architecture diagram description, or any documentation intended for Lark Wiki/Docs. Enforces structured templates, architecture diagram best practices (5 elements: components, lines, arrows, colors, numbers), UML standards (class diagrams, sequence diagrams, state diagrams in Mermaid/PlantUML), and proper formatting conventions."
 ---
 
