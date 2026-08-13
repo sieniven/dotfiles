@@ -1,0 +1,12 @@
+
+# machine-local Claude context — never publish
+claude/CLAUDE.local.md
+# skills are allowlisted: anything not named here stays local
+claude/skills/*/
+!claude/skills/rust/
+!claude/skills/trading/
+!claude/skills/flashblocks/
+!claude/skills/git-commit/
+!claude/skills/lark-tech-doc/
+!claude/skills/reth-trie/
+!claude/skills/xlayer/
