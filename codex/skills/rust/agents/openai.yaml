@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rust Conventions"
+  short_description: "Apply team Rust engineering conventions"
+  default_prompt: "Use $rust to write or review this Rust change."

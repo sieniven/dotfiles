@@ -1,0 +1,4 @@
+interface:
+  display_name: "CryptoStruct Stack"
+  short_description: "Work safely in the CryptoStruct trading stack"
+  default_prompt: "Use $crypto-struct to implement a safe change in the existing trading stack."

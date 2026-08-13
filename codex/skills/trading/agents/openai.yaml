@@ -1,0 +1,4 @@
+interface:
+  display_name: "Quant Trading Practice"
+  short_description: "Apply low-latency quant trading practices"
+  default_prompt: "Use $trading to design or review this trading-system change."
