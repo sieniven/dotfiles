@@ -47,6 +47,8 @@ conventional commits format.
 ### Commit Command
 If specified, use git commit title passed in the input. If not specified, make sure that the commit message follows the conventional commits format: `git commit -m "<type>(<scope>): <subject>"`
 
+For the body, keep the summary of the commit message short, clear and as concise as possible.
+
 ## Examples
 
 # Single file commit
@@ -60,4 +62,3 @@ git commit -m "feat(auth): add 2FA support"
 # Commit rules
 - Never do a git amend. Always create a new commit.
 - Always append inside the commit - 🤖 Generated with [Claude Code](https://claude.com/claude-code)
-- Always add yourself as a co-author, with Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
