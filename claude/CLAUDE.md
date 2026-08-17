@@ -34,6 +34,20 @@ named `<group>-<name>`:
 - `infra/` — infrastructure (Kafka, etc.).
 - `ai-pgd-agents/` — internal AI agent platform.
 
+## Orchestration
+
+- Difficulty alone doesn't justify multi-agent work; shape does. When a task
+  decomposes into many independent items, or its findings need independent
+  verification before acting on them, propose a workflow (stages + rough
+  scale) instead of grinding it inline — I'll approve per run.
+- When work is long-running or a backlog (backtests, CI, migration sweeps),
+  suggest /loop or ralph-loop with an explicit stop condition rather than
+  polling manually.
+- "ultracode" in my prompt = standing opt-in: orchestrate by default,
+  maximize thoroughness over token cost.
+- Loops and workflows never touch live trading state. Repos, backtests, and
+  CI only.
+
 ## Skills
 
 When working under `~/dev`, load `trading` (domain practice) plus
