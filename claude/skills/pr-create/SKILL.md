@@ -62,6 +62,12 @@ order:
   flow, key data structures, performance optimizations and their trade-offs.
   Earns its place when the numbered list above cannot carry the detail a
   reviewer needs.
+- `## Fix` — the root cause and the repair: what the previous behaviour got
+  wrong, and how the change resolves it. Earns its place when the bug is not
+  self-evident from the diff.
+- `## Optimization` — what got faster and by what mechanism, with measured
+  before/after numbers. Earns its place on any performance-motivated change;
+  quote benchmarks only when they were actually run.
 - `## Breaking changes` — what breaks, and what callers must do. Required
   whenever a public interface signature, config flag, wire format, or default
   changes.
@@ -69,6 +75,9 @@ order:
   names. Skip when the numbered list above already covers it (it usually does).
 - `## Test coverage` — the unit and functional tests covering the diff, when
   that coverage is worth spelling out. Only tests actually run.
+
+`## Implementation`, `## Fix`, and `## Optimization` fill the same slot — pick
+the one matching the PR's intent, not two.
 
 ## Voice
 
