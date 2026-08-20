@@ -10,3 +10,4 @@ claude/skills/*/
 !claude/skills/lark-tech-doc/
 !claude/skills/reth-trie/
 !claude/skills/xlayer/
+!claude/skills/pr-create/
