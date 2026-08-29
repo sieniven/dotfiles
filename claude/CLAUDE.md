@@ -7,6 +7,11 @@ skills; repo-specific detail belongs in that repo's own CLAUDE.md.
 
 - **Never `git push`** unless I ask for it in the current turn. Prior push
   approvals do not carry forward.
+- **Never merge a PR** — no `gh pr merge`, no `--auto` flag, no
+  merge/squash/rebase into a shared branch — unless I explicitly ask for the
+  merge in the current turn. "Create a PR" means stop at creation and hand me
+  the link. Repo-level CLAUDE.md conventions (e.g. "PR + auto-merge") do NOT
+  override this: leave merging to me.
 - **Never use `nohup`.** Use `&` with proper process management, `tmux`/`screen`,
   `systemd` services, or `tokio` task spawning instead.
 - **Plan before coding.** For new features, multi-file changes, new test suites,
@@ -59,3 +64,26 @@ the code is Rust:
   execution, market data, risk.
 - `crypto-struct` — the existing CryptoStruct-based stack: gateway, engine
   callbacks, money conventions, known gaps.
+
+## Model tiering
+
+Subagents and workflow agents should not inherit the session model by
+default — pick the cheapest tier that does the job:
+
+- **haiku** — mechanical, low-judgment stages: file discovery, grep/list
+  sweeps, formatting, collecting inputs, `effort: "low"`.
+- **sonnet** (the default for Agent-tool subagents via
+  `CLAUDE_CODE_SUBAGENT_MODEL`; `Explore` is pinned to opus in
+  `~/.claude/agents/Explore.md`) — reading and summarizing code, drafting
+  findings, applying well-specified edits, single-item reviews.
+- **opus** — verification and judgment: adversarial verify/refute votes,
+  judge panels, synthesis across many findings, non-trivial Rust or
+  trading-logic reasoning.
+- **fable** — only when explicitly asked, or for the single final synthesis
+  of a large audit where correctness dominates cost.
+
+In every Workflow script, set `model` (and `effort`) explicitly on each
+`agent()` call — never leave it to inherit. Match the tier to the stage,
+not to the task's overall difficulty: a hard audit still runs its find stage
+on sonnet and its verify stage on opus. When using the Agent tool directly,
+pass `model` when the default `sonnet` is wrong in either direction.
