@@ -53,6 +53,20 @@ named `<group>-<name>`:
 - Loops and workflows never touch live trading state. Repos, backtests, and
   CI only.
 
+## Advisor
+
+The `advisor` tool (a stronger reviewer that sees the full transcript) is
+configured via `advisorModel` in `~/.claude/settings.json`. Consult it at these points,
+not only when stuck:
+
+- **Before a large plan** — before committing to an approach for a
+  multi-file change, refactor, new feature, or audit.
+- **When the same error appears twice** — a repeated failure means the
+  current approach is not converging; get a second read before a third try.
+- **Before marking a long task done** — make the deliverable durable first
+  (file written, result saved), then consult the advisor before declaring
+  done.
+
 ## Skills
 
 When working under `~/dev`, load `trading` (domain practice) plus
@@ -73,9 +87,11 @@ default — pick the cheapest tier that does the job:
 - **haiku** — mechanical, low-judgment stages: file discovery, grep/list
   sweeps, formatting, collecting inputs, `effort: "low"`.
 - **sonnet** (the default for Agent-tool subagents via
-  `CLAUDE_CODE_SUBAGENT_MODEL`; `Explore` is pinned to opus in
-  `~/.claude/agents/Explore.md`) — reading and summarizing code, drafting
-  findings, applying well-specified edits, single-item reviews.
+  `CLAUDE_CODE_SUBAGENT_MODEL`; the custom agents in `~/.claude/agents/` —
+  `Explore`, `implementer`, `docs-lookup`, `code-reader`,
+  `trading-code-reviewer` — pin opus at medium effort, and `verifier` pins
+  opus at high) — reading and summarizing code, drafting findings, applying
+  well-specified edits, single-item reviews.
 - **opus** — verification and judgment: adversarial verify/refute votes,
   judge panels, synthesis across many findings, non-trivial Rust or
   trading-logic reasoning.
