@@ -71,13 +71,20 @@ not only when stuck:
 
 When working under `~/dev`, load `trading` (domain practice) plus
 `crypto-struct` (current-stack specifics) for trading work, and `rust` when
-the code is Rust:
+the code is Rust. Add `quant-research` for alpha or signal research and
+`strategy-validation` when implementing, backtesting, or promoting a strategy:
 
 - `rust` — language and runtime conventions.
 - `trading` — quant trading domain expertise: market making, engine design,
   execution, market data, risk.
 - `crypto-struct` — the existing CryptoStruct-based stack: gateway, engine
-  callbacks, money conventions, known gaps.
+  callbacks, money conventions, known gaps, research and backtester facts.
+- `quant-research` — QR practice: hypothesis-first research loop, tick/L2
+  data hygiene, microstructure signals, statistical validation,
+  multiple-testing discipline, cost-first reporting.
+- `strategy-validation` — QD practice: backtest fidelity and optimism audit,
+  parity and determinism, walk-forward and parameter robustness, TCA and
+  markouts, promotion gates and kill criteria.
 
 ## Model tiering
 
@@ -89,9 +96,10 @@ default — pick the cheapest tier that does the job:
 - **sonnet** (the default for Agent-tool subagents via
   `CLAUDE_CODE_SUBAGENT_MODEL`; the custom agents in `~/.claude/agents/` —
   `Explore`, `implementer`, `docs-lookup`, `code-reader`,
-  `trading-code-reviewer` — pin opus at medium effort, and `verifier` pins
-  opus at high) — reading and summarizing code, drafting findings, applying
-  well-specified edits, single-item reviews.
+  `trading-code-reviewer` — pin opus at medium effort, and `verifier`,
+  `quant-researcher`, and `quant-developer` pin opus at high) — reading and
+  summarizing code, drafting findings, applying well-specified edits,
+  single-item reviews.
 - **opus** — verification and judgment: adversarial verify/refute votes,
   judge panels, synthesis across many findings, non-trivial Rust or
   trading-logic reasoning.
