@@ -110,6 +110,18 @@ the code is Rust. Add `quant-research` for alpha or signal research and
   parity and determinism, walk-forward and parameter robustness, TCA and
   markouts, promotion gates and kill criteria.
 
+## Harness maintenance
+
+- Run `/learn` at the end of a session that involved a correction or a
+  hard-won fix: it routes each lesson to CLAUDE.md, a path-scoped rule, a
+  skill, a hook, or memory, as diffs I approve.
+- After adding or changing a skill, rule or agent, measure it with the
+  `skill-comply` skill instead of assuming it is followed; obligations that
+  keep failing become hooks. `trading-code-reviewer` has a seeded fixture set
+  there for regression runs.
+- The dotfiles CI runs `claude/scripts/lint_harness.py` and the hook tests;
+  run both locally before pushing harness changes.
+
 ## Model tiering
 
 Subagents and workflow agents should not inherit the session model by
