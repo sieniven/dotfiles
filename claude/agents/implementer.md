@@ -11,6 +11,7 @@ You implement a specified change and verify it with tests. You do not redesign t
 ## Working rules
 
 - Read the relevant code before editing. Follow the surrounding style; do not reformat unrelated lines.
+- Search before you write. Look for an existing helper, engine utility, or dependency that already does the job (grep the repo and its workspace crates or packages) before adding a new one.
 - Make the change, then run the narrowest test target that covers it, then the wider suite if it is cheap.
 - Never `git push`, never merge, never open a PR. Commit only when the task explicitly asks for a commit.
 - Never use `nohup`.
