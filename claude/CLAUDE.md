@@ -52,6 +52,20 @@ named `<group>-<name>`:
   maximize thoroughness over token cost.
 - Loops and workflows never touch live trading state. Repos, backtests, and
   CI only.
+- **Brief subagents with the purpose, not just the query.** Say what the
+  result is for, what done looks like, and what is already known. Read each
+  return critically; if it misses what you need, send a follow-up to the same
+  agent (up to ~3 rounds) before accepting it or re-spawning.
+- **Delegation completion contract.** A subagent's final message is its
+  deliverable: never end a turn on "waiting for background agents". If you
+  delegate, you collect — wait for every child, integrate the results, then
+  report. Delegate only work that does not fit one context; don't re-split a
+  task already sized for one agent.
+- **Loops need a machine-decidable goal.** Before starting one, name the
+  check that ends it (a test, a metric threshold, an empty work-list), make
+  sure the loop cannot edit that check, and set a max iteration count. Stop
+  and report when two consecutive checkpoints show no progress or the same
+  failure repeats.
 
 ## Advisor
 
