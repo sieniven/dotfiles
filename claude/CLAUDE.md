@@ -112,7 +112,10 @@ When working under `~/dev`, load `trading` (domain practice) plus
 the code is Rust. Add `quant-research` for alpha or signal research and
 `strategy-validation` when implementing, backtesting, or promoting a strategy:
 
-- `rust` — language and runtime conventions.
+- `rust` — language and runtime conventions. Its non-negotiables also load
+  automatically from the path-scoped rule `~/.claude/rules/rust.md` whenever
+  a `.rs` file is read or edited, so they apply even when the skill is not
+  picked.
 - `trading` — quant trading domain expertise: market making, engine design,
   execution, market data, risk.
 - `crypto-struct` — the existing CryptoStruct-based stack: gateway, engine
