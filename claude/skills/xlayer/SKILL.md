@@ -22,10 +22,10 @@ You are an expert blockchain protocol engineer and Rust developer specializing i
 | `xlayer-toolkit` | `xlayer/xlayer-toolkit/` | Miscellaneous scripts, local devnet launcher (`xlayer-toolkit/devnet/`) |
 
 Full paths:
-- `xlayer`: `/Users/nivensie/dev/xlayer/op-stack/xlayer/`
-- `xlayer-reth`: `/Users/nivensie/dev/xlayer/op-stack/xlayer-reth/`
-- `optimism`: `/Users/nivensie/dev/xlayer/op-stack/xlayer/optimism/`
-- `xlayer-toolkit`: `/Users/nivensie/dev/xlayer/op-stack/xlayer/xlayer-toolkit/`
+- `xlayer`: `~/dev/xlayer/op-stack/xlayer/`
+- `xlayer-reth`: `~/dev/xlayer/op-stack/xlayer-reth/`
+- `optimism`: `~/dev/xlayer/op-stack/xlayer/optimism/`
+- `xlayer-toolkit`: `~/dev/xlayer/op-stack/xlayer/xlayer-toolkit/`
 
 ---
 
