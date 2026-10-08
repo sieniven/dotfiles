@@ -23,6 +23,10 @@ skills; repo-specific detail belongs in that repo's own CLAUDE.md.
   before loosening lint config or touching risk/production config). When one
   denies a call, do not route around it with `bash -c`, a script, or an
   alias — tell me what you wanted to run and why.
+- **Never end a turn on unverified code without saying so.** After the last
+  code edit, run the narrowest build/test/lint that covers it, or state
+  plainly that the change is unverified and why. A Stop hook holds the turn
+  open once when neither happened, and when debug leftovers remain.
 
 ## Environment
 
