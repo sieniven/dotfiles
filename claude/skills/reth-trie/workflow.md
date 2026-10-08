@@ -1,5 +1,39 @@
 # Multiproof Pipeline: End-to-End Workflow
 
+## Contents
+
+- [Stage 0: Spawn — All Components Start Concurrently](#stage-0-spawn--all-components-start-concurrently)
+- [Stage 1: Proof Target Generation (Concurrent with Execution)](#stage-1-proof-target-generation-concurrent-with-execution)
+  - [Source A: Prewarm Task — Speculative Prefetch](#source-a-prewarm-task--speculative-prefetch)
+  - [Source B: Real Block Execution — Authoritative State Updates](#source-b-real-block-execution--authoritative-state-updates)
+  - [Timeline](#timeline)
+- [Stage 2: MultiProofTask — Deduplication and Dispatch](#stage-2-multiprooftask--deduplication-and-dispatch)
+  - [Deduplication](#deduplication)
+  - [Sequence Numbers](#sequence-numbers)
+  - [Chunking](#chunking)
+- [Stage 3: Account Proof Workers — Full Trie Scan](#stage-3-account-proof-workers--full-trie-scan)
+  - [What Workers Read](#what-workers-read)
+  - [The Trie Scan](#the-trie-scan)
+  - [The HashBuilder](#the-hashbuilder)
+  - [Interleaved Storage Proof Parallelism](#interleaved-storage-proof-parallelism)
+  - [Output: ProofResultMessage](#output-proofresultmessage)
+- [Stage 4: Proof Nodes — What They Are](#stage-4-proof-nodes--what-they-are)
+- [Stage 5: ProofSequencer — Reordering](#stage-5-proofsequencer--reordering)
+- [Stage 6: Sparse Trie — Revelation, Leaf Updates, and Root Computation](#stage-6-sparse-trie--revelation-leaf-updates-and-root-computation)
+  - [Step 1: Reveal Proof Nodes](#step-1-reveal-proof-nodes)
+  - [Step 2: Update Storage Trie Leaves](#step-2-update-storage-trie-leaves)
+  - [Step 3: Update Account Trie Leaves](#step-3-update-account-trie-leaves)
+  - [Step 4: Handle Account Removals](#step-4-handle-account-removals)
+  - [Handling Overlapping Proofs](#handling-overlapping-proofs)
+- [Stage 7: Final Root Hash Computation](#stage-7-final-root-hash-computation)
+  - [`ParallelSparseTrie::root()` ([parallel.rs:897-917])](#parallelsparsetrieroot-parallelrs897-917)
+  - [How Intermediate Hashes Are Computed](#how-intermediate-hashes-are-computed)
+  - [`SparseStateTrie::root_with_updates()` ([state.rs:888-906])](#sparsestatetrieroot_with_updates-staters888-906)
+- [Stage 8: Verification and Completion](#stage-8-verification-and-completion)
+- [Complete Data Flow Diagram](#complete-data-flow-diagram)
+- [Key Correctness Invariants](#key-correctness-invariants)
+
+
 This document traces the full lifecycle of how reth computes the state root for a block, from transaction execution through proof worker dispatch, sparse trie updates, and final hash computation. It covers the concurrency model, data flow, and correctness invariants.
 
 ---
