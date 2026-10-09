@@ -11,9 +11,8 @@ description: >-
   backstop, the venue double, issue #386. Also the legacy stack trading on the
   same adapters today (the Python tradingenginecs engine and its StrategyBase
   callbacks, engine-backtesting parity, the Rust mm/hedger bot, money
-  conventions) and the Tardis research data and engine-backtesting fill-model
-  defaults. Use when working in the engine/, strategy/, monitor/, system/ or
-  research/ repos under ~/dev, or on anything naming the cryptostruct feature
+  conventions). Use when working in the engine/, strategy/, monitor/ or
+  system/ repos under ~/dev, or on anything naming the cryptostruct feature
   or a connectivity.cryptostruct block.
 ---
 
@@ -328,45 +327,8 @@ copies the callback names so a port is a transcription with four
 differences: fills as deltas, integer ticks and lots, `Option` for absence,
 positions derived from own fills. The full facts, gaps and the porting table
 are in [references/legacy-python-stack.md](references/legacy-python-stack.md).
-
-## Research and backtesting stack
-
-- Historical data is Tardis: `book_snapshot_25` (L2, 25 levels) and
-  `derivative_ticker` (funding rate, with `mark_price` / `index_price`
-  forwarded so basis and premium can be reconstructed) through
-  `TardisBookSnapshot25Feed` / `TardisDerivativeTickerFeed` in
-  `engine-backtesting`; `pipeline/fetch_tardis_bulk.py` downloads. Rows carry
-  exchange `timestamp` and `local_timestamp` — decide on local time. Research
-  notebooks live in `research/quant-research`; backtest drivers live in each
-  strategy repo's `backtest_runs/`, never in the engine repo.
-- `OrderBookFillModel` defaults to `optimistic_maker_fill=True`,
-  `maker_fill_price="limit"`, `maker_fill_probability=1.0`: every non-crossing
-  limit order fills in full at its own price, the optimistic upper bound for
-  any maker strategy. The pessimistic variants are
-  `optimistic_maker_fill=False` (fill only when the book crosses) and
-  `use_trades_for_maker_fill=True` (trade-driven), which defaults to
-  `maker_taker_fallback=True` and crosses the book as a taker after
-  `maker_order_timeout_seconds` (60 s) — a pessimistic maker run needs
-  `maker_taker_fallback=False` or a timeout matched to the quote lifetime, or
-  it gets silent taker fills. There is **no queue-position model and no
-  latency model**. Slippage is `FixedBpsSlippage` / `NoSlippageModel`; fees
-  are `FixedFeeModel` / `TieredFeeModel(FeeTable)`.
-- `BacktestMetrics` covers Sharpe, Sortino, Calmar, drawdown, win rate,
-  profit factor, fees, slippage and funding, but **no markouts or adverse
-  selection** — compute those from `trades.csv` against the book feed.
-  `ParameterSweep` derives per-cell seeds deterministically; `metrics.json`
-  is the canonical sweep output; `BacktestConfig.seed` gives bit-identical
-  artifacts; data-quality validators write `data_quality.json`.
-- In-house precedent for validation gates lives in `strategy-funding-arb`:
-  `backtest/gates/oos_gate.py` (purged, embargoed, anchored walk-forward),
-  `backtest/parity/` (golden-fixture live-vs-backtest parity),
-  `backtester/leakage_gate.py` and `optimizer/search.py` (refuses risk-tier
-  keys in any grid). Reuse the pattern before writing a new one.
-- Repo-level research agents exist in `.claude/agents/` of two repos: sigma's
-  `quant-researcher`, `signal-testing`, `backtest-report-writer`;
-  funding-arb's `execution-cost-analyst`, `pnl-attribution-analyst`,
-  `basis-researcher`. Inside those repos, prefer them over the global
-  `quant-trading-researcher` — they know the local data.
+The backtester that runs these strategies on recorded data, its fill-model
+defaults and the Tardis feeds are `quant-trading-backtesting`'s.
 
 ## References
 

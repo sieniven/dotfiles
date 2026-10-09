@@ -1,6 +1,6 @@
 ---
 name: quant-trading-validation
-description: Quant developer (QD) practice for taking a strategy from research to production on an HFT / market-making / crypto-perp desk — backtest fidelity (fill rule, queue position, feed and order latency, cancel-fill races, venue matching semantics, fee and rebate tiers, funding), the mandatory optimism audit, backtest-to-live parity and determinism, purged walk-forward and parameter-plateau robustness, transaction cost analysis and markout reconciliation, shadow/paper/canary promotion gates and pre-registered kill criteria. Use when implementing or backtesting a strategy or signal, judging whether a backtest is believable, reviewing a parameter sweep or optimizer output, or deciding whether a strategy is ready for paper or live — even when the user only asks "does this backtest look right".
+description: Quant developer (QD) practice for taking a strategy from research to production on an HFT / market-making / crypto-perp desk — the fidelity ladder that ranks backtest evidence, the mandatory optimism audit, backtest-to-live parity, purged walk-forward and parameter-plateau robustness, transaction cost analysis and markout reconciliation, shadow/paper/canary promotion gates and pre-registered kill criteria. Use when implementing or backtesting a strategy or signal, judging whether a backtest is believable, reviewing a parameter sweep or optimizer output, or deciding whether a strategy is ready for paper or live — even when the user only asks "does this backtest look right". Building or calibrating the simulator itself lives in quant-trading-backtesting.
 ---
 
 # Strategy validation practice
@@ -8,8 +8,9 @@ description: Quant developer (QD) practice for taking a strategy from research t
 The quant developer's job is the gap between "the backtest says" and "this
 makes money live": build on the engine, prove the backtest is believable,
 gate promotion. Research statistics live in `quant-trading-research`;
-engine and execution conventions in `quant-trading`; the platform's
-backtester facts in `quant-trading-crypto-struct`.
+engine and execution conventions in `quant-trading`; how the simulator
+works, its fill, queue and latency models, the platform's backtester facts
+and how to read a backtest in `quant-trading-backtesting`.
 
 ## Fidelity ladder
 
@@ -18,28 +19,17 @@ backtester facts in `quant-trading-crypto-struct`.
   (3) replay with default models; (4) signal-only IC and markouts. Say which
   rung every number came from. Never claim maker profitability from (3) or
   (4) alone.
-- A maker backtest must state its assumption for each of: fill rule (touch /
-  trade-through / queue position); queue position and cancels ahead of you;
-  feed latency; order-entry and response latency for submit, amend and cancel
-  separately; partial fills; cancel-fill races; venue matching semantics
-  (post-only reject, IOC/FOK, amend loses priority, self-trade prevention);
-  fee and rebate tier; funding on the quantity held at settlement; own market
-  impact (usually unmodelled — hence start small live).
-- Fill rules: fill-on-touch (resting order fills when the opposite best
-  reaches it) is the optimistic bound; trade-through (fill only when a trade
-  prints through the price) is the pessimistic bound; truth is queue
-  position. Volume-only queue rules ignore cancels and are far too
-  pessimistic deep in the queue; probabilistic queue models (the hftbacktest
-  ProbQueueModel family) need calibration against live fill rates before they
-  mean anything. Mid-price execution is never acceptable when edge < 2× spread.
-- Latency: keep exchange and local timestamps on every event; declare a
-  latency profile (p50/p95/p99 for feed, submit, amend, cancel). Promotion
-  uses p95, stress uses p99; engine hot-path budgets still use p999 per
-  `quant-trading`. An alpha whose half-life is shorter than the order round
-  trip is optimistic until shadow-validated.
-- Cancel-fill race: live, the fill can arrive after the cancel was sent; a
-  backtest that cancels instantly hides adverse fills on stale quotes. Model
-  cancel latency at least equal to submit latency.
+- A maker backtest states its assumption for each of: fill rule, queue
+  position, feed and order latency (submit, amend and cancel separately),
+  partial fills, the cancel-fill race, venue matching semantics, fee and
+  rebate tier, funding, own impact. What each assumption means, which
+  choices are the optimistic and pessimistic bounds, and how to calibrate
+  the models against live are `quant-trading-backtesting`'s; the verdict
+  needs them stated.
+- Latency percentiles for the verdict: promotion uses p95, stress uses p99;
+  engine hot-path budgets still use p999 per `quant-trading`. An alpha whose
+  half-life is shorter than the order round trip is optimistic until
+  shadow-validated.
 
 ## Optimism audit (before any verdict)
 
@@ -54,17 +44,16 @@ backtester facts in `quant-trading-crypto-struct`.
   (markout), inventory mark-to-market, fees. A fat residual is broken
   attribution, not hidden alpha.
 
-## Parity and determinism
+## Parity
 
 - Same code path: the strategy class that runs live is the one that runs in
   the backtest. A research-only reimplementation is a parity gap by
   construction. Keep the decision core pure — `(market snapshot, risk
   snapshot, params) → decision` — callable from both, with a golden-fixture
   parity test that fails on drift.
-- Deterministic replay: seeded RNG with named substreams; deterministic
-  event ordering (tie-break on timestamp, event-type priority, sequence);
-  pinned data snapshot (path and hash), code (commit) and config. Same inputs
-  → byte-identical artifacts; any diff is a bug.
+- Deterministic replay is the simulator's job (`quant-trading-backtesting`);
+  the verdict requires the rerun to be byte-identical and the data, code and
+  config pinned. A run that cannot be reproduced is not evidence.
 - First parity check live vs backtest is the fill rate by distance from the
   touch and by side, then the markout curve of fills, then the fee tier and
   funding actually paid — before PnL. PnL agreement with fill-rate
@@ -122,6 +111,6 @@ backtester facts in `quant-trading-crypto-struct`.
 
 - Verdict first (READY-FOR-PAPER / NEEDS-WORK / REJECT) with the fidelity
   rung; fill, queue, latency, fee and funding assumptions; optimism-audit
-  table (optimistic vs pessimistic); parity and determinism status;
+  table (optimistic vs pessimistic); parity status;
   walk-forward table; parameter surface; PnL decomposition; residual risks;
   the live evidence that would change the verdict.
