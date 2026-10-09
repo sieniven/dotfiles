@@ -111,9 +111,10 @@ not only when stuck:
 
 When working under `~/dev`, load `quant-trading` (domain practice) plus
 `quant-trading-crypto-struct` (current-stack specifics) for trading work, and
-`rust` when the code is Rust. Add `quant-trading-research` for alpha or signal
-research and `quant-trading-strategy-validation` when implementing,
-backtesting, or promoting a strategy:
+`rust` when the code is Rust. Add the venue skill, `quant-trading-apex` or
+`quant-trading-tt`, when the work names that venue; `quant-trading-research`
+for alpha or signal research; and `quant-trading-strategy-validation` when
+implementing, backtesting, or promoting a strategy:
 
 - `rust` — language and runtime conventions. Its non-negotiables also load
   automatically from the path-scoped rule `~/.claude/rules/rust.md` whenever
@@ -121,9 +122,15 @@ backtesting, or promoting a strategy:
   picked.
 - `quant-trading` — quant trading domain expertise: market making, engine
   design, execution, market data, risk.
-- `quant-trading-crypto-struct` — the existing CryptoStruct-based stack:
-  gateway, engine callbacks, money conventions, known gaps, research and
-  backtester facts.
+- `quant-trading-crypto-struct` — the CryptoStruct adapters and
+  engine-middleware's venue module for them, the legacy Python stack and
+  Rust bot that trade on them today, research and backtester facts.
+- `quant-trading-apex` — the APEX venue: the vendor SDK and documents, the
+  engine-middleware `apex` module, UAT tiers and live-safety rules, open
+  questions.
+- `quant-trading-tt` — the TradingTechnologies venue: TT FIX and REST facts,
+  the engine-middleware `tt` module, proven offline only, and what its live
+  path still needs.
 - `quant-trading-research` — QR practice: hypothesis-first research loop,
   tick/L2 data hygiene, microstructure signals, statistical validation,
   multiple-testing discipline, cost-first reporting.

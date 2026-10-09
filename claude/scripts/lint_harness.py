@@ -3,7 +3,8 @@
 
 Catches the drift that otherwise only shows up as a silently ignored agent or
 skill: frontmatter that does not parse, names that don't match files,
-descriptions over the 1,024-character limit, SKILL.md files past 500 lines,
+descriptions over the 1,024-character limit or silently truncated by a YAML
+comment, SKILL.md files past 500 lines,
 broken relative links, hard-coded home paths, agents preloading skills that
 don't exist, and settings.json hooks pointing at missing scripts.
 
@@ -76,12 +77,17 @@ def git_ignored(repo, path):
         return False
 
 
+PLAIN_DESC_COMMENT = re.compile(r"^description:\s*[^>|\"'\s].*\s#", re.M)
+
+
 def check_description(path, fm, rep):
     desc = fm.get("description")
     if not desc or not str(desc).strip():
         rep.err(path, "missing description")
     elif len(str(desc)) > MAX_DESC:
         rep.err(path, "description is %d chars (limit %d)" % (len(str(desc)), MAX_DESC))
+    if PLAIN_DESC_COMMENT.search(read(path).split("\n---", 1)[0]):
+        rep.err(path, "description is a plain YAML scalar containing ' #', which YAML reads as a comment and silently truncates; write it as a folded block (description: >-) or quote it")
 
 
 def check_text(path, rep):
