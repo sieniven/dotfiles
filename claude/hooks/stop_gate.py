@@ -3,7 +3,7 @@
 
 Runs when Claude is about to end its turn:
 
-  format   rustfmt / ruff format every file edited this session that was
+  format   rustfmt / ruff format / gofmt every file edited this session that was
            formatted (or new) before the first edit (see format_tracker.py).
   debug    blocks once if code edited this turn still contains debug
            leftovers: dbg!, todo!, unimplemented!, breakpoint(), pdb,

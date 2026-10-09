@@ -130,6 +130,19 @@ class StopGateTest(unittest.TestCase):
         self.assertEqual(self.read(dirty), "pub fn   a( ) {}\n")
         self.assertIn("formatted 1", out.get("systemMessage", ""))
 
+    @unittest.skipUnless(shutil.which("gofmt"), "gofmt not installed")
+    def test_gofmt_formats_only_previously_clean_files(self):
+        clean = self.write("pkg/clean.go", "package pkg\n\nfunc A() {}\n")
+        dirty = self.write("pkg/dirty.go", "package pkg\nfunc   A( ) {}\n")
+        for p in (clean, dirty):
+            self.hook("format_tracker.py", {"session_id": "s1", "cwd": self.repo, "tool_name": "Edit", "tool_input": {"file_path": p}})
+        with open(clean, "w") as fh:
+            fh.write("package pkg\n\nfunc   A( ) {}\n")
+        out = self.stop([user("x"), tool("Edit", {"file_path": clean, "new_string": "A( )"}), tool("Bash", {"command": "go vet ./..."}), say("Done.")])
+        self.assertEqual(self.read(clean), "package pkg\n\nfunc A() {}\n")
+        self.assertEqual(self.read(dirty), "package pkg\nfunc   A( ) {}\n")
+        self.assertIn("formatted 1", out.get("systemMessage", ""))
+
 
 if __name__ == "__main__":
     unittest.main()
