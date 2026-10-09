@@ -1,0 +1,42 @@
+---
+description: Write the session handoff narrative (worked / failed / not tried / next) so the next session or post-compaction context can pick up cleanly
+name: handoff
+---
+
+Record a handoff for this session. Focus: the user's supplied task or focus
+
+1. Write the narrative from what actually happened in this session — evidence
+   over impressions. Use exactly these sections, each a short bullet list:
+
+   ### Goal
+   One or two lines: what the user is trying to achieve.
+
+   ### What worked
+   Approaches that were verified, each with its evidence: the command, test,
+   metric or `path:line` that shows it.
+
+   ### What failed
+   Approaches tried and abandoned, and why — the error, the counterexample, or
+   the number that ruled each out — so nobody retries them blind.
+
+   ### Not tried yet
+   Options considered but not attempted, with why they might matter.
+
+   ### Next steps
+   The concrete next actions in order, and anything unverified that must be
+   checked first. Name open questions for the user.
+
+2. Save it by piping the narrative into the handoff script (this also refreshes
+   the mechanical snapshot of files, commands and todos). Use `--session <thread-id>` if CODEX_THREAD_ID is unavailable, or `--file <existing-handoff>`; the script finds this
+   session's own handoff file from `$CODEX_THREAD_ID` and prints its path:
+
+   ```sh
+   python3 "$HOME/.codex/hooks/session_handoff.py" narrate --cwd "$PWD" <<'EOF'
+   ### Goal
+   ...
+   EOF
+   ```
+
+3. Reply with the file path and a two-line summary. Tell the user they can now
+   `/new` (or quit) and run `$pickup` in the fresh session to continue from
+   this handoff, or `/compact` to keep going here.

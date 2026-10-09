@@ -1,5 +1,12 @@
-
 # machine-local Claude context — never publish
 claude/CLAUDE.local.md
+
+# Machine-local state and generated caches
+local/
 __pycache__/
 *.pyc
+backups/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store

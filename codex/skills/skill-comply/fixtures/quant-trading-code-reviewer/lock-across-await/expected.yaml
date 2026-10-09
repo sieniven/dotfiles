@@ -1,0 +1,7 @@
+verdict: FAIL
+also_ok: [PASS-WITH-RISKS]
+must_find:
+  - id: lock-across-await
+    lines: [15, 20]
+    about: "position lock held across the exchange round trip; every other fill blocks for a network RTT, and an error leaves the hedge unapplied"
+must_not_flag: []

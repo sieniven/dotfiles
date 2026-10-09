@@ -1,0 +1,6 @@
+verdict: FAIL
+must_find:
+  - id: swallowed-cancel
+    lines: [12, 13]
+    about: "cancel error discarded and the quote marked cancelled anyway; a failed cancel leaves a live stale quote the book thinks is gone"
+must_not_flag: []

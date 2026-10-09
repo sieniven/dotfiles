@@ -1,0 +1,7 @@
+verdict: PASS
+must_find: []
+must_not_flag:
+  - id: cold-path-alloc
+    about: "allocations (format!, to_string, collect, join) in startup config loading"
+  - id: blocking-fs
+    about: "std::fs::read_to_string in a sync startup function"

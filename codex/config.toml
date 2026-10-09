@@ -1,0 +1,144 @@
+# Maintained in ~/dev/dotfiles/codex; ~/.codex/config.toml is a symlink.
+model = "gpt-6.1-sol"
+model_reasoning_effort = "xhigh"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+web_search = "live"
+project_doc_fallback_filenames = ["CLAUDE.md"]
+
+[projects."/Users/niven.sie"]
+trust_level = "trusted"
+
+[projects."/Users/niven.sie/dev"]
+trust_level = "trusted"
+
+[mcp_servers.aws-mcp]
+command = "uvx"
+args = ["mcp-proxy-for-aws@latest", "https://aws-mcp.us-east-1.api.aws/mcp", "--metadata", "INSTALL_SOURCE=aws-cli"]
+
+[agents]
+enabled = true
+default_subagent_model = "gpt-6.1-sol"
+default_subagent_reasoning_effort = "medium"
+
+[agents."Explore"]
+description = "Read-only search agent for broad fan-out searches — when answering means sweeping many files, directories, or naming conventions and only the conclusion is needed, not the file dumps. Locates code; does not review or audit it. Specify breadth: \"medium\" for moderate exploration, \"very thorough\" for multiple locations and naming conventions."
+config_file = "agents/Explore.toml"
+
+[agents."blockchain-protocol"]
+description = "Blockchain node protocol engineer. Plans and implements node internals: database layer (mdbx, RocksDB, LevelDB, triedb), MPT/SMT state management, state sync, block processing pipelines, and low-level storage, I/O and performance work. Use for design or implementation tasks in reth / OP Stack node code, such as batching trie commits into one mdbx transaction, speeding up historical state reads, planning an MPT-to-SMT migration, or auditing trie commit logic after inconsistent state roots on crash recovery."
+config_file = "agents/blockchain-protocol.toml"
+
+[agents."blockchain-unit-test"]
+description = "Designs, writes and runs unit and functional tests for blockchain node code (OP Stack, reth, xlayer-reth): consensus, transaction processing, state transitions, RPC methods, networking and storage. Use after a node feature or fix is implemented and needs test coverage, or to draft a test plan before implementation. Runs tests through the machine's named-test runner and reports each target as pass, fail or unverified."
+config_file = "agents/blockchain-unit-test.toml"
+
+[agents."code-reader"]
+description = "Traces a code path end to end and explains how it actually works — entry points, data flow, state, invariants, error and cancel paths, concurrency — with path and line references. Use when the main session needs to understand a mechanism before changing it, or when the question is \"how does X work\" rather than \"where is X\". Explore locates code and verifier judges a claim; this agent explains. Read-only."
+config_file = "agents/code-reader.toml"
+
+[agents."docs-lookup"]
+description = "Looks up authoritative documentation for a library, API, tool, or protocol and returns the relevant facts with sources — signatures, semantics, version differences, config keys, gotchas. Use when the main session needs to confirm how something works rather than guess, such as a crate or package API, an exchange REST or WebSocket endpoint, a CLI flag, a config schema. Read-only."
+config_file = "agents/docs-lookup.toml"
+
+[agents."implementer"]
+description = "Edits code and runs the tests that verify the change. Use for a well-specified change — a bug fix, a small feature, a refactor with a clear target — once the main session has decided what to build and needs it built and verified. Returns what changed, the exact commands run, and a per-target verdict of pass, fail, or unverified."
+config_file = "agents/implementer.toml"
+
+[agents."quant-trading-code-reviewer"]
+description = "Reviews changes that touch the execution path of a trading system — order placement, cancel and amend, fill and inventory accounting, risk gates, emergency stop, money arithmetic, market data ingestion, and latency-sensitive hot paths. Preloads the quant-trading and quant-trading-crypto-struct skills and reads the matching language rule for Rust or Python diffs. Use before committing such a change in any repo that has no reviewer of its own for that path. Returns PASS, FAIL, or PASS-WITH-RISKS with each risk tied to a line and a concrete failure scenario. Read-only."
+config_file = "agents/quant-trading-code-reviewer.toml"
+
+[agents."quant-trading-developer"]
+description = "Quant developer for an HFT / market-making / crypto-perp desk. Turns a researched edge or spec into strategy code on the engine, wires the backtest driver, runs the backtest and the validation gates — optimism audit of fill and latency assumptions, parity and determinism, walk-forward and parameter robustness, TCA and PnL decomposition — and returns a promotion verdict. Use for implementing a strategy or signal, judging whether a backtest is believable, reviewing a parameter sweep, or deciding readiness for paper or canary. Writes strategy code, drivers, tests and reports; never live orders, production config, or risk-parameter sweeps. Hands execution-path diffs to quant-trading-code-reviewer."
+config_file = "agents/quant-trading-developer.toml"
+
+[agents."quant-trading-researcher"]
+description = "Quant researcher for an HFT / market-making / crypto-perp desk. Takes an idea, question or dataset and runs the research loop — states a falsifiable hypothesis, pre-registers metric and horizon, checks data hygiene, builds features causally, evaluates with markout curves and IC under proper statistics, accounts for every trial, and returns a verdict with a hand-off spec. Use for \"is there alpha in X\", signal ideas, feature studies on order-book or trade data, funding and basis studies, analysis notebooks under a research repo, and pressure-testing a claimed edge. Writes only research artifacts (scripts, notebooks, reports in a research repo or under ~/.cache/claude-scratch/); never strategy or engine code, never anything live."
+config_file = "agents/quant-trading-researcher.toml"
+
+[agents."verifier"]
+description = "Adversarial check of one claim. Give it a finding, a conclusion, or a \"this is fixed\" assertion together with the evidence offered for it, and it tries to refute the claim rather than confirm it. Returns CONFIRMED, REFUTED, or UNVERIFIABLE with the discriminating evidence. Use before acting on an audit finding, before declaring a bug fixed, or whenever a conclusion would be expensive to get wrong. Read-only on files and git state."
+config_file = "agents/verifier.toml"
+
+[agents."xlayer-devnet"]
+description = "Deploys, tests and debugs the X Layer local devnet (OP Stack): starting and stopping it through its Makefile, reading docker container logs, debugging op-reth / op-geth / op-node / conductor / batcher issues, checking how local code changes behave end to end, tuning devnet .env parameters, and running the ERC20 stress test. Use when a change needs end-to-end or performance validation on the devnet, or when the devnet itself misbehaves."
+config_file = "agents/xlayer-devnet.toml"
+
+[agents."code-reviewer"]
+description = "Use this agent when you need to review code for adherence to project guidelines, style guides, and best practices. This agent should be used proactively after writing or modifying code, especially before committing changes or creating pull requests. It will check for style violations, potential issues, and ensure code follows the established patterns in CLAUDE.md. Also the agent needs to know which files to focus on for the review. In most cases this will be recently completed work which is unstaged in git (can be retrieved by running git diff). However there can be cases where this is different, make sure to specify this as the agent input when calling the agent. Typical triggers include the user asking for a review of a feature they just implemented, the assistant proactively reviewing its own newly-written code before declaring a task done, and a final pre-PR check before opening a pull request. See \"When to invoke\" in the agent body for worked scenarios."
+config_file = "agents/code-reviewer.toml"
+
+[agents."code-simplifier"]
+description = "Use this agent when code has been written or modified and needs to be simplified for clarity, consistency, and maintainability while preserving all functionality. This agent should be triggered automatically after completing a coding task or writing a logical chunk of code. It simplifies code by following project best practices while retaining all functionality. The agent focuses only on recently modified code unless instructed otherwise.\n\nExamples:\n\n<example>\nContext: The assistant has just implemented a new feature that adds user authentication to an API endpoint.\nuser: \"Please add authentication to the /api/users endpoint\"\nassistant: \"I've implemented the authentication for the /api/users endpoint. Here's the code:\"\n<function call omitted for brevity>\n<commentary>\nSince a logical chunk of code has been written (authentication feature), use the Task tool to launch the code-simplifier agent to improve the code's clarity and maintainability while preserving functionality.\n</commentary>\nassistant: \"Now let me use the code-simplifier agent to refine this implementation for better clarity and maintainability\"\n</example>\n\n<example>\nContext: The assistant has just fixed a bug by adding several conditional checks.\nuser: \"Fix the null pointer exception in the data processor\"\nassistant: \"I've added the necessary null checks to prevent the exception:\"\n<function call omitted for brevity>\n<commentary>\nAfter modifying code to fix a bug, use the code-simplifier agent to ensure the fix follows best practices and maintains code quality.\n</commentary>\nassistant: \"Let me refine this bug fix using the code-simplifier agent to ensure it follows our best practices\"\n</example>\n\n<example>\nContext: The assistant has just refactored a function to improve performance.\nuser: \"Optimize the data sorting algorithm for better performance\"\nassistant: \"I've optimized the sorting algorithm. Here's the updated implementation:\"\n<function call omitted for brevity>\n<commentary>\nAfter completing a performance optimization task, use the code-simplifier agent to ensure the optimized code is also clear and maintainable.\n</commentary>\nassistant: \"Now I'll use the code-simplifier agent to ensure the optimized code is also clear and follows our coding standards\"\n</example>\n"
+config_file = "agents/code-simplifier.toml"
+
+[agents."comment-analyzer"]
+description = "Use this agent when you need to analyze code comments for accuracy, completeness, and long-term maintainability. This includes (1) after generating large documentation comments or docstrings, (2) before finalizing a pull request that adds or modifies comments, (3) when reviewing existing comments for potential technical debt or comment rot, and (4) when you need to verify that comments accurately reflect the code they describe. See \"When to invoke\" in the agent body for worked scenarios."
+config_file = "agents/comment-analyzer.toml"
+
+[agents."pr-test-analyzer"]
+description = "Use this agent when you need to review a pull request for test coverage quality and completeness. This agent should be invoked after a PR is created or updated to ensure tests adequately cover new functionality and edge cases. Typical triggers include the user asking whether tests on a freshly-created PR are thorough, an updated PR adding new logic that needs coverage analysis, and a final pre-merge double-check before marking a PR ready. See \"When to invoke\" in the agent body for worked scenarios."
+config_file = "agents/pr-test-analyzer.toml"
+
+[agents."silent-failure-hunter"]
+description = "Use this agent when reviewing code changes in a pull request to identify silent failures, inadequate error handling, and inappropriate fallback behavior. This agent should be invoked proactively after completing a logical chunk of work that involves error handling, catch blocks, fallback logic, or any code that could potentially suppress errors. Examples:\\n\\n<example>\\nContext: Daisy has just finished implementing a new feature that fetches data from an API with fallback behavior.\\nDaisy: \"I've added error handling to the API client. Can you review it?\"\\nAssistant: \"Let me use the silent-failure-hunter agent to thoroughly examine the error handling in your changes.\"\\n<Task tool invocation to launch silent-failure-hunter agent>\\n</example>\\n\\n<example>\\nContext: Daisy has created a PR with changes that include try-catch blocks.\\nDaisy: \"Please review PR #1234\"\\nAssistant: \"I'll use the silent-failure-hunter agent to check for any silent failures or inadequate error handling in this PR.\"\\n<Task tool invocation to launch silent-failure-hunter agent>\\n</example>\\n\\n<example>\\nContext: Daisy has just refactored error handling code.\\nDaisy: \"I've updated the error handling in the authentication module\"\\nAssistant: \"Let me proactively use the silent-failure-hunter agent to ensure the error handling changes don't introduce silent failures.\"\\n<Task tool invocation to launch silent-failure-hunter agent>\\n</example>"
+config_file = "agents/silent-failure-hunter.toml"
+
+[agents."type-design-analyzer"]
+description = "Use this agent when you need expert analysis of type design in your codebase. Specifically use it (1) when introducing a new type to ensure it follows best practices for encapsulation and invariant expression, (2) during pull request creation to review all types being added, and (3) when refactoring existing types to improve their design quality. The agent will provide both qualitative feedback and quantitative ratings on encapsulation, invariant expression, usefulness, and enforcement. See \"When to invoke\" in the agent body for worked scenarios."
+config_file = "agents/type-design-analyzer.toml"
+
+[agents."code-simplifier-focused"]
+description = "Simplifies and refines code for clarity, consistency, and maintainability while preserving all functionality. Focuses on recently modified code unless instructed otherwise."
+config_file = "agents/code-simplifier-focused.toml"
+
+[tui]
+screen_reader_detection_done = true
+
+[hooks.state]
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:pre_tool_use:0:0"]
+trusted_hash = "sha256:9234308c131bdc58016b0f67d5a3cf6849b1c5a407457c1f9b8631b684caa981"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:pre_tool_use:1:0"]
+trusted_hash = "sha256:71af669ad5c1d5d1cb20614994d69e34bdffacea809fb9ba637e9005507db666"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:pre_tool_use:1:1"]
+trusted_hash = "sha256:9298ee7052782377d812b8f0bca05e669282f7fcb764a999f10cdf43849fa2f3"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:pre_tool_use:2:0"]
+trusted_hash = "sha256:8036f87255aaa4c0b1e8f4c24d454f92f330f57064312f590179f95da14c9be0"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:post_tool_use:0:0"]
+trusted_hash = "sha256:c15a871cfb934e8883836e18fe8ea43a16ff78ca37d488a9549be2fb130fb9c9"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:post_tool_use:0:1"]
+trusted_hash = "sha256:0471011f27fddc7487f21046eb6f50eea896bc172f507ae8449e0fc125616e8d"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:pre_compact:0:0"]
+trusted_hash = "sha256:3eb2da555d54e1446e8ba72e2b9625e0d6697c5bc53eb7ff7fd7ca72fcb29637"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:session_start:0:0"]
+trusted_hash = "sha256:d3806bcdee951b6ea6f1cfdfe086ffcf5f48d78667f9cd0c4aecd24f87c44778"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:session_start:1:0"]
+trusted_hash = "sha256:44b7aed8906e589c4551ed7f135203c40af4a18f2fb5ea8007c63875afe75d55"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:session_start:2:0"]
+trusted_hash = "sha256:e3679068fcd361d569958bf4dc76c6172cbdc1980733f0763b762cb01ab6a110"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:session_end:0:0"]
+trusted_hash = "sha256:96e09399d660373fe04e46b308804eb7ab948b392f36ca4c31641be5a2463a17"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:user_prompt_submit:0:0"]
+trusted_hash = "sha256:de87c644f2b2b8e280f1b158d8afb6848b91f0aaef77e10c52b78a6c777a5da9"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:subagent_start:0:0"]
+trusted_hash = "sha256:4b6014fec194f9fd8dd08be829767ded68a4ae14cae7ed48aaa9da85515a6057"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:stop:0:0"]
+trusted_hash = "sha256:332b1061db70e4077e749a9c62974d07f7f4fa807bce13ddf63a1e5a8609bd4c"
+
+[hooks.state."/Users/niven.sie/.codex/hooks.json:stop:0:1"]
+trusted_hash = "sha256:f7bd3c31c84b66f933e7335df4e86327dea8d80bee7d01dca610da44428a610f"
