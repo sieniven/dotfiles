@@ -108,43 +108,44 @@ class HandoffTest(Base):
         r = self.hook("session_handoff.py", ["start"], self.payload(**kw))
         return json.loads(r.stdout)["hookSpecificOutput"]["additionalContext"]
 
-    def test_narrate_preserved_and_carried_over_clear(self):
+    def narrate(self, text):
         self.hook("session_handoff.py", ["end"], self.payload())
         [f] = self.files()
-        r = self.hook("session_handoff.py", ["narrate", "--file", f], None, stdin="### Goal\nShip the cancel fix\n")
+        r = self.hook("session_handoff.py", ["narrate", "--file", f], None, stdin=text)
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.hook("session_handoff.py", ["end"], self.payload())  # /clear ends the old session first
+        return f
+
+    def test_narrate_preserved_across_refresh(self):
+        f = self.narrate("### Goal\nShip the cancel fix\n")
+        self.hook("session_handoff.py", ["precompact"], self.payload())
         self.assertIn("Ship the cancel fix", read(f))
-        self.assertIn("- Narrative written:", read(f))
+        self.assertIn("cargo check -p hedger", read(f))
+
+    def test_clear_is_always_fresh(self):
+        # /clear means a fresh start, even right after /handoff: nothing from earlier sessions.
+        self.narrate("### Goal\nShip the cancel fix\n")
         ctx = self.ctx(session_id="yyyy8888", source="clear")
-        self.assertIn("Handoff carried over /clear", ctx)
-        self.assertIn("cargo check -p hedger", ctx)
+        self.assertTrue(ctx.startswith("Session handoff file:"))
+        self.assertNotIn("Ship the cancel fix", ctx)
+        self.assertNotIn("cargo check -p hedger", ctx)
+        self.assertNotIn("Previous session", ctx)
 
     def test_startup_gets_one_line_pointer_with_goal(self):
-        self.hook("session_handoff.py", ["end"], self.payload())
-        [f] = self.files()
-        self.hook("session_handoff.py", ["narrate", "--file", f], None, stdin="### Goal\nShip the cancel fix\n")
+        self.narrate("### Goal\nShip the cancel fix\n")
         ctx = self.ctx(session_id="zzzz9999", source="startup")
         self.assertIn("Previous session in this project", ctx)
         self.assertIn("(Ship the cancel fix)", ctx)
+        self.assertIn("/pickup", ctx)
         self.assertNotIn("cargo check -p hedger", ctx)
 
-    def test_clear_without_recent_handoff_starts_fresh(self):
-        # Unrelated fresh start: /clear with no /handoff must not pull the old task in.
-        self.hook("session_handoff.py", ["end"], self.payload())
-        ctx = self.ctx(session_id="yyyy8888", source="clear")
-        self.assertNotIn("carried over", ctx)
-        self.assertNotIn("cargo check -p hedger", ctx)
-        self.assertIn("no narrative, snapshot only", ctx)
-
-    def test_stale_handoff_not_carried_over_clear(self):
-        self.hook("session_handoff.py", ["end"], self.payload())
-        [f] = self.files()
-        self.hook("session_handoff.py", ["narrate", "--file", f], None, stdin="### Goal\nShip the cancel fix\n")
-        self.env["CLAUDE_HANDOFF_CLEAR_WINDOW_MIN"] = "0"
-        ctx = self.ctx(session_id="yyyy8888", source="clear")
-        self.assertNotIn("carried over", ctx)
-        self.assertIn("(Ship the cancel fix)", ctx)
+    def test_previous_cli_skips_current_session_file(self):
+        prev = self.narrate("### Goal\nShip the cancel fix\n")
+        self.ctx(session_id="yyyy8888", source="clear", transcript_path=None)  # new session: empty file
+        mine = [f for f in self.files() if f != prev][0]
+        r = self.hook("session_handoff.py", ["previous", "--cwd", self.cwd, "--exclude", mine], None, stdin="")
+        self.assertEqual(r.stdout.strip(), prev)
+        r = self.hook("session_handoff.py", ["previous", "--cwd", self.cwd, "--exclude", prev], None, stdin="")
+        self.assertEqual(r.returncode, 1)
 
     def test_start_fresh_project_only_names_file(self):
         r = self.hook("session_handoff.py", ["start"], self.payload(source="startup", transcript_path=None))
