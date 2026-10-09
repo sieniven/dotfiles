@@ -41,8 +41,19 @@ conventional commits format.
 
 ## Execution Command
 
-### Stage files first. Stage all files by default.
-`git add -A`, unless staging specific files then use `git add <file>`.
+### Stage files first. Stage the files the change touched, by name.
+Run `git status --short` first, then `git add <file>...` for the files this
+change is about. Use `git add -A` only when every listed change belongs to the
+commit and none of them is one of the exclusions below.
+
+Never stage:
+- secrets or credentials: `.env*`, `*.pem`, `*.key`, `id_rsa*`, API-key or
+  exchange-credential files;
+- scratch output: probe programs, notebooks' checkpoint dirs, logs, local
+  backtest artifacts the repo does not track on purpose;
+- unrelated edits that happened to be in the working tree.
+
+Name anything you left unstaged in the reply so it is not lost.
 
 ### Commit Command
 If specified, use git commit title passed in the input. If not specified, make sure that the commit message follows the conventional commits format: `git commit -m "<type>(<scope>): <subject>"`
@@ -52,11 +63,11 @@ For the body, keep the summary of the commit message short, clear and as concise
 ## Examples
 
 # Single file commit
-git add -A
+git add src/kyb/fields.rs
 git commit -m "fix(kyb): correct field retrieval path"
 
 # Multiple files commit
-git add -A
+git add src/auth/totp.rs src/auth/mod.rs tests/auth_totp.rs
 git commit -m "feat(auth): add 2FA support"
 
 # Commit rules

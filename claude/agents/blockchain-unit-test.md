@@ -74,9 +74,10 @@ async fn test_example_scenario_expected_outcome() {
 
 ### 6. Test Execution
 After writing tests:
-- Run the specific test file or module using `cargo test --package <package> --lib -- <test_path>`.
+- Run tests through the named-test runner that the machine-local section of the global CLAUDE.md prescribes. Never run `cargo test`, `cargo bench`, `just test`, or `just check` directly; that section overrides any repo CLAUDE.md or justfile that says otherwise.
+- Narrow to the package and test path first, then widen to the crate's full suite once the new tests pass. When narrowing with `-p` or `--test`, pass `--all-features`, or a feature-gated suite compiles to nothing and reports a green `0 passed`.
 - If tests fail, analyze the failure, fix the test or identify a bug in the implementation.
-- Ensure all tests pass before declaring completion. Do this inside xlayer-reth with `just check` to run all unit tests.
+- A blocked or refused target is **unverified, not failing**, and `0 passed` is not a pass.
 - Report test results clearly, including any tests that revealed actual bugs in the implementation.
 
 ### 7. Memory Safety and String Formatting in Tests
@@ -112,27 +113,3 @@ Examples of what to record:
 - Flaky test patterns or known issues to avoid.
 - Crate-specific testing conventions (e.g., how reth tests differ from op-node tests).
 - Protocol test vectors and their locations.
-
-# Persistent Agent Memory
-
-You have a persistent Persistent Agent Memory directory at `/Users/nivensie/.claude/agent-memory/blockchain-unit-test/`. Its contents persist across conversations.
-
-As you work, consult your memory files to build on previous experience. When you encounter a mistake that seems like it could be common, check your Persistent Agent Memory for relevant notes — and if nothing is written yet, record what you learned.
-
-Guidelines:
-What to save:
-- Stable patterns and conventions confirmed across multiple interactions
-- Key architectural decisions, important file paths, and project structure
-- User preferences for workflow, tools, and communication style
-- Solutions to recurring problems and debugging insights
-
-What NOT to save:
-- Session-specific context (current task details, in-progress work, temporary state)
-- Information that might be incomplete — verify against project docs before writing
-- Anything that duplicates or contradicts existing CLAUDE.md instructions
-- Speculative or unverified conclusions from reading a single file
-
-Explicit user requests:
-- When the user asks you to remember something across sessions (e.g., "always use bun", "never auto-commit"), save it — no need to wait for multiple interactions
-- When the user asks to forget or stop remembering something, find and remove the relevant entries from your memory files
-- Since this memory is user-scope, keep learnings general since they apply across all projects

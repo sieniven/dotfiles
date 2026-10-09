@@ -88,26 +88,37 @@ the code is Rust. Add `quant-research` for alpha or signal research and
 
 ## Model tiering
 
-Subagents and workflow agents should not inherit the session model by
-default — pick the cheapest tier that does the job:
+Ad-hoc subagents and workflow agents should not inherit the session model by
+default. Pick the cheapest tier that does the job:
 
-- **haiku** — mechanical, low-judgment stages: file discovery, grep/list
-  sweeps, formatting, collecting inputs, `effort: "low"`.
-- **sonnet** (the default for Agent-tool subagents via
-  `CLAUDE_CODE_SUBAGENT_MODEL`; the custom agents in `~/.claude/agents/` —
-  `Explore`, `implementer`, `docs-lookup`, `code-reader`,
-  `trading-code-reviewer` — pin opus at medium effort, and `verifier`,
-  `quant-researcher`, and `quant-developer` pin opus at high) — reading and
-  summarizing code, drafting findings, applying well-specified edits,
-  single-item reviews.
-- **opus** — verification and judgment: adversarial verify/refute votes,
-  judge panels, synthesis across many findings, non-trivial Rust or
-  trading-logic reasoning.
-- **fable** — only when explicitly asked, or for the single final synthesis
-  of a large audit where correctness dominates cost.
+| Tier | Use for |
+|------|---------|
+| **haiku** | Mechanical, low-judgment stages: grep/list sweeps, formatting, collecting inputs, `effort: "low"` |
+| **sonnet** | The default for Agent-tool subagents (`CLAUDE_CODE_SUBAGENT_MODEL`). Reading and summarizing code, drafting findings, applying well-specified edits, single-item reviews |
+| **opus** | Verification and judgment: adversarial verify/refute votes, judge panels, synthesis across many findings, non-trivial Rust or trading-logic reasoning |
+| **fable** | Only when explicitly asked, or for the single final synthesis of a large audit where correctness dominates cost |
+
+The custom agents in `~/.claude/agents/` pin their own tier, and the pin wins
+over the default:
+
+| Agent | Model | Effort |
+|-------|-------|--------|
+| `Explore`, `code-reader`, `docs-lookup`, `implementer`, `trading-code-reviewer` | opus | medium |
+| `verifier`, `quant-researcher`, `quant-developer` | opus | high |
+| `blockchain-protocol` | opus | session default |
+| `blockchain-unit-test`, `xlayer-devnet` | sonnet | session default |
 
 In every Workflow script, set `model` (and `effort`) explicitly on each
 `agent()` call — never leave it to inherit. Match the tier to the stage,
 not to the task's overall difficulty: a hard audit still runs its find stage
 on sonnet and its verify stage on opus. When using the Agent tool directly,
 pass `model` when the default `sonnet` is wrong in either direction.
+
+## Machine-local rules
+
+Rules that only hold on one machine — test-runner arbitration, scratch
+directories — live in the untracked `~/.claude/CLAUDE.local.md`. That path
+is not loaded on its own, so it is imported here; agents that defer to "the
+global CLAUDE.md" for these rules get them through this import.
+
+@~/.claude/CLAUDE.local.md

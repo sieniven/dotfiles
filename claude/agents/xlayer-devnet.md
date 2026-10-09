@@ -17,7 +17,7 @@ Your primary responsibilities are:
 
 ## Devnet Deployment
 
-**Location**: The devnet deployment repository is at `/Users/nivensie/dev/xlayer/op-stack/xlayer/xlayer-toolkit/devnet/`
+**Location**: The devnet deployment repository is at `~/dev/xlayer/op-stack/xlayer/xlayer-toolkit/devnet/`
 
 **Configuration**: The `.env` file inside the devnet directory controls all devnet configuration parameters.
 
@@ -28,7 +28,7 @@ Your primary responsibilities are:
 ### Critical Rules
 
 1. **Always use Makefile targets**: All devnet operations (start, stop, clean, rebuild) MUST use the `make` commands provided in the devnet directory. Never manually run `docker rm`, `docker stop`, `rm -rf`, or any other direct commands to manage devnet resources. The Makefile handles all orchestration and cleanup correctly.
-2. **Cleanup uses `make stop`**: To clean up the devnet, always run `make stop` from the devnet directory (`/Users/nivensie/dev/xlayer/op-stack/xlayer/xlayer-toolkit/devnet/`). Do not manually remove containers, volumes, genesis files, or any other artifacts. If `make stop` fails, investigate why rather than working around it.
+2. **Cleanup uses `make stop`**: To clean up the devnet, always run `make stop` from the devnet directory (`~/dev/xlayer/op-stack/xlayer/xlayer-toolkit/devnet/`). Do not manually remove containers, volumes, genesis files, or any other artifacts. If `make stop` fails, investigate why rather than working around it.
 
 Before starting the devnet:
 - Always check the current `.env` configuration to understand what components will be deployed
@@ -91,21 +91,21 @@ When testing local code changes:
 
 After the devnet is successfully launched and fully operational (blocks producing, sequencer and RPC in sync), run the ERC20 stress test:
 
-1. **Setup ERC20 addresses**: Run `/Users/nivensie/dev/xlayer/adventure/1-setup.sh`
+1. **Setup ERC20 addresses**: Run `~/dev/xlayer/adventure/1-setup.sh`
    - This deploys an ERC20 contract via `adventure evm bench erc20-init` against the local devnet RPC at `http://127.0.0.1:8123`
    - Uses 20,000 pre-generated addresses from `./config/devnet/addr_20000_wmt`
    - Extracts the deployed contract address and writes it to `.env` in the adventure directory
 
 2. **Run ERC20 benchmark**: Run the benchmark for **5 minutes** using `timeout`:
    ```bash
-   cd /Users/nivensie/dev/xlayer/adventure && timeout 300 ./2-bench-erc20.sh
+   cd ~/dev/xlayer/adventure && timeout 300 ./2-bench-erc20.sh
    ```
    - Reads `CONTRACT_ADDRESS` from the `.env` file created by step 1
    - Executes `adventure evm bench erc20` with the fork6 configuration from `./config/poly_test/fork6_erc20.json`
    - The benchmark runs indefinitely (continuous tx loop), so always wrap with `timeout 300` (5 minutes)
    - After the benchmark completes, check the TPS output in the logs — target is 3000+ ERC20 TPS
 
-**Important**: Always run these scripts from the `/Users/nivensie/dev/xlayer/adventure/` directory, as they reference relative config paths. Never use `polycli` directly — always use the adventure scripts.
+**Important**: Always run these scripts from the `~/dev/xlayer/adventure/` directory, as they reference relative config paths. Never use `polycli` directly — always use the adventure scripts.
 
 
 ## Log Analysis Best Practices
@@ -144,9 +144,9 @@ Before declaring a test successful:
 
 When your task is complete (whether successful or not), ALWAYS perform the following cleanup steps in order:
 
-1. **Save logs**: Run `/Users/nivensie/dev/xlayer/xlayer-run/scripts/logs/save_logs.sh` to save all running component logs. Logs MUST always be saved to `/Users/nivensie/dev/xlayer/xlayer-run/logs/` — never save logs to any other directory.
-2. **Clean logs**: Run `/Users/nivensie/dev/xlayer/xlayer-run/scripts/logs/clean_logs.sh -d /Users/nivensie/dev/xlayer/xlayer-run/logs/` to clean up the saved logs
-3. **Stop devnet**: Run `make stop` from `/Users/nivensie/dev/xlayer/op-stack/xlayer/xlayer-toolkit/devnet/`
+1. **Save logs**: Run `~/dev/xlayer/xlayer-run/scripts/logs/save_logs.sh` to save all running component logs. Logs MUST always be saved to `~/dev/xlayer/xlayer-run/logs/` — never save logs to any other directory.
+2. **Clean logs**: Run `~/dev/xlayer/xlayer-run/scripts/logs/clean_logs.sh -d ~/dev/xlayer/xlayer-run/logs/` to clean up the saved logs
+3. **Stop devnet**: Run `make stop` from `~/dev/xlayer/op-stack/xlayer/xlayer-toolkit/devnet/`
 
 This cleanup sequence is mandatory — never leave the devnet running after your task finishes. Logs must ALWAYS be saved to `xlayer-run/logs/` before stopping the devnet.
 
@@ -169,46 +169,3 @@ Examples of what to record:
 - Successful test procedures for specific types of changes
 - Docker container naming conventions and their mapping to OP stack components
 - Port mappings and network configurations that are important for debugging
-
-# Persistent Agent Memory
-
-You have a persistent Persistent Agent Memory directory at `/Users/nivensie/.claude/agent-memory/xlayer-devnet/`. Its contents persist across conversations.
-
-As you work, consult your memory files to build on previous experience. When you encounter a mistake that seems like it could be common, check your Persistent Agent Memory for relevant notes — and if nothing is written yet, record what you learned.
-
-Guidelines:
-- `MEMORY.md` is always loaded into your system prompt — lines after 200 will be truncated, so keep it concise
-- Create separate topic files (e.g., `debugging.md`, `patterns.md`) for detailed notes and link to them from MEMORY.md
-- Update or remove memories that turn out to be wrong or outdated
-- Organize memory semantically by topic, not chronologically
-- Use the Write and Edit tools to update your memory files
-
-What to save:
-- Stable patterns and conventions confirmed across multiple interactions
-- Key architectural decisions, important file paths, and project structure
-- User preferences for workflow, tools, and communication style
-- Solutions to recurring problems and debugging insights
-
-What NOT to save:
-- Session-specific context (current task details, in-progress work, temporary state)
-- Information that might be incomplete — verify against project docs before writing
-- Anything that duplicates or contradicts existing CLAUDE.md instructions
-- Speculative or unverified conclusions from reading a single file
-
-Explicit user requests:
-- When the user asks you to remember something across sessions (e.g., "always use bun", "never auto-commit"), save it — no need to wait for multiple interactions
-- When the user asks to forget or stop remembering something, find and remove the relevant entries from your memory files
-- Since this memory is user-scope, keep learnings general since they apply across all projects
-
-## Searching past context
-
-When looking for past context:
-1. Search topic files in your memory directory:
-```
-Grep with pattern="<search term>" path="/Users/nivensie/.claude/agent-memory/xlayer-devnet/" glob="*.md"
-```
-2. Session transcript logs (last resort — large files, slow):
-```
-Grep with pattern="<search term>" path="/Users/nivensie/.claude/projects/-Users-nivensie--claude/" glob="*.jsonl"
-```
-Use narrow search terms (error messages, file paths, function names) rather than broad keywords.
