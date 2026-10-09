@@ -4,7 +4,7 @@ description: Quant developer for an HFT / market-making / crypto-perp desk. Turn
 model: opus
 effort: high
 skills:
-  - quant-trading-strategy-validation
+  - quant-trading-validation
   - quant-trading-research
   - quant-trading
   - quant-trading-crypto-struct
