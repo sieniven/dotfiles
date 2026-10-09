@@ -65,6 +65,8 @@ class Base(unittest.TestCase):
         write_transcript(self.transcript, TRANSCRIPT)
         self.env = dict(os.environ, CLAUDE_HOOK_STATE_DIR=self.state)
         self.env.pop("CLAUDE_HOOKS_DISABLE", None)
+        self.env.pop("CLAUDE_CODE_SESSION_ID", None)
+        self.env["HOME"] = tempfile.mkdtemp()  # isolates ~/.claude/projects transcript lookup
 
     def hook(self, script, args, payload, stdin=None):
         r = subprocess.run(
@@ -108,49 +110,71 @@ class HandoffTest(Base):
         r = self.hook("session_handoff.py", ["start"], self.payload(**kw))
         return json.loads(r.stdout)["hookSpecificOutput"]["additionalContext"]
 
-    def test_narrate_preserved_and_carried_over_clear(self):
+    def narrate(self, text):
         self.hook("session_handoff.py", ["end"], self.payload())
         [f] = self.files()
-        r = self.hook("session_handoff.py", ["narrate", "--file", f], None, stdin="### Goal\nShip the cancel fix\n")
+        r = self.hook("session_handoff.py", ["narrate", "--file", f], None, stdin=text)
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.hook("session_handoff.py", ["end"], self.payload())  # /clear ends the old session first
+        return f
+
+    def test_narrate_preserved_across_refresh(self):
+        f = self.narrate("### Goal\nShip the cancel fix\n")
+        self.hook("session_handoff.py", ["precompact"], self.payload())
         self.assertIn("Ship the cancel fix", read(f))
-        self.assertIn("- Narrative written:", read(f))
-        ctx = self.ctx(session_id="yyyy8888", source="clear")
-        self.assertIn("Handoff carried over /clear", ctx)
-        self.assertIn("cargo check -p hedger", ctx)
+        self.assertIn("cargo check -p hedger", read(f))
+
+    def test_clear_runs_nothing(self):
+        # /clear means a fresh start, even right after /handoff.
+        self.narrate("### Goal\nShip the cancel fix\n")
+        before = self.files()
+        r = self.hook("session_handoff.py", ["start"], self.payload(session_id="yyyy8888", source="clear"))
+        self.assertEqual(r.stdout.strip(), "")  # no context injected at all
+        self.assertEqual(self.files(), before)  # no file created either
+
+    def test_settings_do_not_register_session_start_on_clear(self):
+        with open(os.path.join(os.path.dirname(HOOKS), "settings.json")) as fh:
+            hooks = json.load(fh)["hooks"]["SessionStart"]
+        for m in hooks:
+            self.assertNotIn("clear", m["matcher"])
+            self.assertNotEqual(m["matcher"], "*")
 
     def test_startup_gets_one_line_pointer_with_goal(self):
-        self.hook("session_handoff.py", ["end"], self.payload())
-        [f] = self.files()
-        self.hook("session_handoff.py", ["narrate", "--file", f], None, stdin="### Goal\nShip the cancel fix\n")
+        self.narrate("### Goal\nShip the cancel fix\n")
         ctx = self.ctx(session_id="zzzz9999", source="startup")
         self.assertIn("Previous session in this project", ctx)
         self.assertIn("(Ship the cancel fix)", ctx)
+        self.assertIn("/pickup", ctx)
         self.assertNotIn("cargo check -p hedger", ctx)
 
-    def test_clear_without_recent_handoff_starts_fresh(self):
-        # Unrelated fresh start: /clear with no /handoff must not pull the old task in.
-        self.hook("session_handoff.py", ["end"], self.payload())
-        ctx = self.ctx(session_id="yyyy8888", source="clear")
-        self.assertNotIn("carried over", ctx)
-        self.assertNotIn("cargo check -p hedger", ctx)
-        self.assertIn("no narrative, snapshot only", ctx)
-
-    def test_stale_handoff_not_carried_over_clear(self):
-        self.hook("session_handoff.py", ["end"], self.payload())
-        [f] = self.files()
-        self.hook("session_handoff.py", ["narrate", "--file", f], None, stdin="### Goal\nShip the cancel fix\n")
-        self.env["CLAUDE_HANDOFF_CLEAR_WINDOW_MIN"] = "0"
-        ctx = self.ctx(session_id="yyyy8888", source="clear")
-        self.assertNotIn("carried over", ctx)
-        self.assertIn("(Ship the cancel fix)", ctx)
-
-    def test_start_fresh_project_only_names_file(self):
+    def test_start_fresh_project_injects_nothing(self):
         r = self.hook("session_handoff.py", ["start"], self.payload(source="startup", transcript_path=None))
-        ctx = json.loads(r.stdout)["hookSpecificOutput"]["additionalContext"]
-        self.assertTrue(ctx.startswith("Session handoff file:"))
-        self.assertNotIn("Previous session", ctx)
+        self.assertEqual(r.stdout.strip(), "")
+
+    def test_narrate_finds_own_session_from_env(self):
+        sid = "abcdef1234"
+        proj = os.path.join(self.env["HOME"], ".claude", "projects", "-x")
+        os.makedirs(proj)
+        write_transcript(os.path.join(proj, sid + ".jsonl"), TRANSCRIPT)
+        self.env["CLAUDE_CODE_SESSION_ID"] = sid
+        r = self.hook("session_handoff.py", ["narrate", "--cwd", self.cwd], None, stdin="### Goal\nShip it\n")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        [f] = self.files()
+        self.assertEqual(r.stdout.strip(), f)
+        self.assertTrue(f.endswith("-%s.md" % sid[:8]))
+        self.assertIn("Ship it", read(f))
+        self.assertIn("cargo check -p hedger", read(f))  # snapshot from the session's own transcript
+        self.env.pop("CLAUDE_CODE_SESSION_ID")
+        r = self.hook("session_handoff.py", ["narrate", "--cwd", self.cwd], None, stdin="x")
+        self.assertEqual(r.returncode, 1)  # no session id and no --file
+
+    def test_previous_cli_skips_current_session_file(self):
+        prev = self.narrate("### Goal\nShip the cancel fix\n")  # session abcdef12
+        self.env["CLAUDE_CODE_SESSION_ID"] = "yyyy8888"
+        self.hook("session_handoff.py", ["end"], self.payload(session_id="yyyy8888"))  # new session, newer file
+        r = self.hook("session_handoff.py", ["previous", "--cwd", self.cwd], None, stdin="")
+        self.assertEqual(r.stdout.strip(), prev)
+        r = self.hook("session_handoff.py", ["previous", "--cwd", self.cwd, "--exclude", prev], None, stdin="")
+        self.assertEqual(r.returncode, 1)
 
     def test_latest_cli(self):
         self.hook("session_handoff.py", ["end"], self.payload())

@@ -94,14 +94,15 @@ not only when stuck:
 ## Sessions and context
 
 - Hooks keep a per-session handoff file (requests, files changed, commands
-  and their outcome, open todos, last reply). It is restored after
-  compaction. A new session or a plain `/clear` only gets a one-line pointer
-  to the previous one, so unrelated work starts clean; `/handoff` right
-  before `/clear` carries the full handoff over.
-- Run `/handoff` before a `/clear` that continues the same task, before a
-  long break, or when the compaction suggestion fires: it records what
-  worked (with evidence), what failed, what was not tried, and next steps —
-  the part a transcript digest cannot reconstruct.
+  and their outcome, open todos, last reply), saved before compaction and
+  restored right after it — automatic, no command needed.
+- `/clear` always starts fresh: no hook injects anything into a cleared
+  session. To carry work into a new session, do it
+  explicitly: `/handoff` → `/clear` (or quit) → `/pickup`. `/handoff`
+  records what worked (with evidence), what failed, what was not tried, and
+  next steps — the part a transcript digest cannot reconstruct — and
+  `/pickup` loads it in the new session. A brand-new session only gets a
+  one-line pointer to the previous handoff's goal.
 - Compact at phase boundaries (plan agreed, tests green, before switching
   subtask), not mid-change. Don't start a large multi-file change with the
   window nearly full — hand off and compact first.

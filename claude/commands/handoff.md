@@ -5,10 +5,7 @@ argument-hint: "[optional focus, e.g. \"the hedger latency investigation\"]"
 
 Record a handoff for this session. Focus: $ARGUMENTS
 
-1. Find this session's handoff file. It was named in context at session start
-   ("Session handoff file: ..."). If you can't find it, run
-   `python3 "$HOME/.claude/hooks/session_handoff.py" latest --cwd "$PWD"`.
-2. Write the narrative from what actually happened in this session — evidence
+1. Write the narrative from what actually happened in this session — evidence
    over impressions. Use exactly these sections, each a short bullet list:
 
    ### Goal
@@ -29,16 +26,17 @@ Record a handoff for this session. Focus: $ARGUMENTS
    The concrete next actions in order, and anything unverified that must be
    checked first. Name open questions for the user.
 
-3. Save it by piping the narrative into the handoff script (this also refreshes
-   the mechanical snapshot of files, commands and todos):
+2. Save it by piping the narrative into the handoff script (this also refreshes
+   the mechanical snapshot of files, commands and todos). The script finds this
+   session's own handoff file from `$CLAUDE_CODE_SESSION_ID` and prints its path:
 
    ```sh
-   python3 "$HOME/.claude/hooks/session_handoff.py" narrate --file "<path>" <<'EOF'
+   python3 "$HOME/.claude/hooks/session_handoff.py" narrate --cwd "$PWD" <<'EOF'
    ### Goal
    ...
    EOF
    ```
 
-4. Reply with the file path and a two-line summary. Tell the user they can now
-   `/clear` within 30 minutes to continue in a fresh context (the handoff is
-   carried over), or `/compact` to keep going here.
+3. Reply with the file path and a two-line summary. Tell the user they can now
+   `/clear` (or quit) and run `/pickup` in the fresh session to continue from
+   this handoff, or `/compact` to keep going here.
