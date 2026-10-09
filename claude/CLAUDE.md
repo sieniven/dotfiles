@@ -5,18 +5,24 @@ skills; repo-specific detail belongs in that repo's own CLAUDE.md.
 
 ## Hard constraints
 
-- **Never `git push`** unless I ask for it in the current turn. Prior push
-  approvals do not carry forward.
 - **Never merge a PR** — no `gh pr merge`, no `--auto` flag, no
-  merge/squash/rebase into a shared branch — unless I explicitly ask for the
-  merge in the current turn. "Create a PR" means stop at creation and hand me
-  the link. Repo-level CLAUDE.md conventions (e.g. "PR + auto-merge") do NOT
-  override this: leave merging to me.
+  merge/squash/rebase into a shared branch. "Create a PR" means push the
+  branch, open the PR, stop, and hand me the link (see the `pr-create`
+  skill). Repo-level CLAUDE.md conventions (e.g. "PR + auto-merge") do NOT
+  override this: merging is mine.
+- **Pushing is fine; rewriting shared history is not.** Push feature branches
+  freely. Never force-push or delete `main`/`master`; ask before any other
+  force-push.
 - **Never use `nohup`.** Use `&` with proper process management, `tmux`/`screen`,
   `systemd` services, or `tokio` task spawning instead.
 - **Plan before coding.** For new features, multi-file changes, new test suites,
   or refactors: present a structured plan and wait for approval. Single-line
   fixes and typo corrections can skip this.
+- **Guards are rules, not obstacles.** Hooks in `~/.claude/hooks/` enforce
+  the rules above (plus no `--no-verify`, no secrets in commits, and a prompt
+  before loosening lint config or touching risk/production config). When one
+  denies a call, do not route around it with `bash -c`, a script, or an
+  alias — tell me what you wanted to run and why.
 
 ## Environment
 
