@@ -1,0 +1,7 @@
+verdict: FAIL
+also_ok: [PASS-WITH-RISKS]
+must_find:
+  - id: float-money
+    lines: [10, 13]
+    about: "order quantity computed via float and converted back to Decimal (precision / lot-size errors on order qty)"
+must_not_flag: []

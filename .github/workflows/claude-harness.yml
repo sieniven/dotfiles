@@ -1,0 +1,31 @@
+name: claude-harness
+
+on:
+  pull_request:
+    paths:
+      - "claude/**"
+      - ".github/workflows/claude-harness.yml"
+  push:
+    branches: [main]
+    paths:
+      - "claude/**"
+      - ".github/workflows/claude-harness.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # 3.9 is macOS's system python3, which the hooks run under.
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install lint dependencies
+        run: python -m pip install --quiet pyyaml
+      - name: Lint harness
+        run: python claude/scripts/lint_harness.py
+      - name: Hook tests
+        run: python -m unittest discover -s claude/hooks/tests -v

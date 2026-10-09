@@ -95,12 +95,13 @@ not only when stuck:
 
 - Hooks keep a per-session handoff file (requests, files changed, commands
   and their outcome, open todos, last reply). It is restored after
-  compaction, loaded in full after `/clear`, and offered as a pointer to the
-  next session in the same project.
-- Run `/handoff` before `/clear`, before a long break, or when the
-  compaction suggestion fires: it records what worked (with evidence), what
-  failed, what was not tried, and next steps — the part a transcript digest
-  cannot reconstruct.
+  compaction. A new session or a plain `/clear` only gets a one-line pointer
+  to the previous one, so unrelated work starts clean; `/handoff` right
+  before `/clear` carries the full handoff over.
+- Run `/handoff` before a `/clear` that continues the same task, before a
+  long break, or when the compaction suggestion fires: it records what
+  worked (with evidence), what failed, what was not tried, and next steps —
+  the part a transcript digest cannot reconstruct.
 - Compact at phase boundaries (plan agreed, tests green, before switching
   subtask), not mid-change. Don't start a large multi-file change with the
   window nearly full — hand off and compact first.
@@ -126,6 +127,18 @@ the code is Rust. Add `quant-research` for alpha or signal research and
 - `strategy-validation` — QD practice: backtest fidelity and optimism audit,
   parity and determinism, walk-forward and parameter robustness, TCA and
   markouts, promotion gates and kill criteria.
+
+## Harness maintenance
+
+- Run `/learn` at the end of a session that involved a correction or a
+  hard-won fix: it routes each lesson to CLAUDE.md, a path-scoped rule, a
+  skill, a hook, or memory, as diffs I approve.
+- After adding or changing a skill, rule or agent, measure it with the
+  `skill-comply` skill instead of assuming it is followed; obligations that
+  keep failing become hooks. `trading-code-reviewer` has a seeded fixture set
+  there for regression runs.
+- The dotfiles CI runs `claude/scripts/lint_harness.py` and the hook tests;
+  run both locally before pushing harness changes.
 
 ## Model tiering
 

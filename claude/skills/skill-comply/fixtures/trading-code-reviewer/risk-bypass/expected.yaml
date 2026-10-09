@@ -1,0 +1,6 @@
+verdict: FAIL
+must_find:
+  - id: risk-bypass
+    lines: [13, 14]
+    about: "fast path places the order with no pre-trade risk check at all, not just without the refresh"
+must_not_flag: []

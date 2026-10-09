@@ -1,0 +1,7 @@
+verdict: PASS
+must_find: []
+must_not_flag:
+  - id: constructor-assert
+    about: "the assert! in the constructor (startup-time invariant, not a hot-path panic)"
+  - id: manufactured-nit
+    about: "any style-only or 'consider X' suggestion reported as a finding"
