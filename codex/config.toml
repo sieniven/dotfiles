@@ -96,6 +96,9 @@ config_file = "agents/code-simplifier-focused.toml"
 [tui]
 screen_reader_detection_done = true
 
+[tui.model_availability_nux]
+"gpt-6.1-sol" = 1
+
 [hooks.state]
 
 [hooks.state."/Users/niven.sie/.codex/hooks.json:pre_tool_use:0:0"]

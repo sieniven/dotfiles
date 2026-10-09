@@ -61,8 +61,6 @@
       "Read(/tmp/**)",
       "Edit(/Users/niven.sie/dev/**)",
       "Edit(/Users/niven.sie/.claude/**)",
-      "Write(/Users/niven.sie/dev/**)",
-      "Write(/Users/niven.sie/.claude/**)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebSearch"
