@@ -5,8 +5,9 @@ before Claude first touched it this session.
 stop_gate.py formats edited files once at Stop instead of after every edit,
 and only files that were already formatted (or new), so it never turns a
 small edit into a whole-file formatting diff in a repo that isn't
-rustfmt/ruff-clean. Rust uses `rustfmt --check`; Python uses
-`ruff format --check` only when the project configures ruff.
+rustfmt/ruff/gofmt-clean. Rust uses `rustfmt --check`; Python uses
+`ruff format --check` only when the project configures ruff; Go uses
+`gofmt -l`, which lists an unformatted file instead of failing.
 """
 
 import json
@@ -88,13 +89,15 @@ def formatter(path):
         return (["rustfmt", "--check", "--edition", ed, path], ["rustfmt", "--edition", ed, path])
     if path.endswith(".py") and shutil.which("ruff") and ruff_configured(path):
         return (["ruff", "format", "--check", "--quiet", path], ["ruff", "format", "--quiet", path])
+    if path.endswith(".go") and shutil.which("gofmt"):
+        return (["gofmt", "-l", path], ["gofmt", "-w", path])
     return None
 
 
 def is_clean(check_argv, cwd):
     try:
         r = subprocess.run(check_argv, cwd=cwd, capture_output=True, timeout=20)
-        return r.returncode == 0
+        return r.returncode == 0 and not r.stdout.strip()
     except (OSError, subprocess.SubprocessError):
         return False
 
