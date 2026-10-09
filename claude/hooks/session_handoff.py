@@ -8,19 +8,22 @@ outcome, open todos, last reply) plus a narrative block (what worked with
 evidence, what failed, what was not tried, next steps) written by /handoff.
 
 Hook modes (argv[1]):
-  start       SessionStart: create this session's file and inject its path.
-              After `compact`/`resume`, inject this session's snapshot. After
-              `/clear`, nothing else: a cleared session starts fresh. On
-              `startup`, add a one-line pointer with the previous goal.
+  start       SessionStart (registered for startup|resume|compact only, never
+              /clear): after `compact`/`resume`, inject this session's
+              snapshot; on `startup`, a one-line pointer to the previous
+              handoff's goal. A cleared session gets nothing.
   precompact  PreCompact: refresh the snapshot before context is compacted
   end         SessionEnd: refresh the snapshot when the session closes
 
-CLI modes:
-  narrate --file PATH   replace the narrative block with stdin, refresh snapshot
+CLI modes (the session comes from $CLAUDE_CODE_SESSION_ID, which Claude Code
+sets for the commands Claude runs, so no hook has to announce a file path):
+  narrate [--cwd DIR] [--file PATH]
+                        write stdin as this session's narrative and refresh
+                        its snapshot (creates the session's file if needed)
   latest [--cwd DIR]    print the newest handoff path for a project
   previous [--cwd DIR] [--exclude PATH]
-                        print the newest handoff with content, skipping PATH
-                        (the current session's own file); used by /pickup
+                        print the newest handoff with content, skipping this
+                        session's own file (and PATH); used by /pickup
 
 Env: CLAUDE_HANDOFF_MAX_CHARS (default 8000), CLAUDE_HANDOFF_KEEP (30),
 CLAUDE_HANDOFF_MAX_AGE_DAYS for the startup pointer (7).
@@ -77,6 +80,22 @@ def session_file(cwd, session_id, create=True):
     if not create:
         return None
     return os.path.join(d, "%s-%s.md" % (datetime.datetime.now().strftime("%Y%m%d-%H%M"), sid))
+
+
+def current_session():
+    return os.environ.get("CLAUDE_CODE_SESSION_ID") or None
+
+
+def find_transcript(session_id):
+    if not session_id:
+        return None
+    hits = glob.glob(os.path.join(os.path.expanduser("~/.claude/projects"), "*", session_id + ".jsonl"))
+    return hits[0] if hits else None
+
+
+def newest_first(cwd):
+    files = glob.glob(os.path.join(project_dir(cwd), "*.md"))
+    return sorted(files, key=lambda f: (os.path.getmtime(f), f), reverse=True)
 
 
 def prune(cwd):
@@ -259,19 +278,17 @@ def on_snapshot(payload, trigger):
 
 
 def on_start(payload):
-    cwd = payload.get("cwd") or os.getcwd()
-    sid = payload.get("session_id")
     source = payload.get("source") or "startup"
-    mine = session_file(cwd, sid, create=False)
-    if mine is None:
-        mine = write_snapshot(session_file(cwd, sid), cwd, sid, payload.get("transcript_path"), "start")
-    parts = ["Session handoff file: `%s` (run /handoff to record the narrative before /clear or a long break)." % mine]
-
-    if source in ("compact", "resume") and has_content(mine):
+    if source == "clear":
+        return  # a cleared session starts fresh; settings.json doesn't register this for clear either
+    cwd = payload.get("cwd") or os.getcwd()
+    mine = session_file(cwd, payload.get("session_id"), create=False)
+    parts = []
+    if source in ("compact", "resume") and mine and has_content(mine):
         parts.append("State saved before this %s:\n\n%s" % (source, capped(read_text(mine), MAX_CHARS)))
     elif source == "startup":
         others = [
-            f for f in sorted(glob.glob(os.path.join(project_dir(cwd), "*.md")), reverse=True)
+            f for f in newest_first(cwd)
             if f != mine and has_content(f) and time.time() - os.path.getmtime(f) < MAX_AGE_DAYS * 86400
         ]
         if others:
@@ -281,8 +298,8 @@ def on_start(payload):
                 "Previous session in this project: `%s` (%s). Ignore it unless the user runs /pickup "
                 "or asks to continue that work." % (others[0], goal)
             )
-    # source == "clear": the user asked for a fresh start, so nothing from earlier sessions.
-    additional_context("SessionStart", "\n\n".join(parts))
+    if parts:
+        additional_context("SessionStart", "\n\n".join(parts))
     prune(cwd)
 
 
@@ -293,9 +310,14 @@ def on_start(payload):
 def cli(argv):
     if argv[1] == "previous":
         cwd = argv[argv.index("--cwd") + 1] if "--cwd" in argv else os.getcwd()
-        exclude = os.path.realpath(os.path.expanduser(argv[argv.index("--exclude") + 1])) if "--exclude" in argv else None
-        for f in sorted(glob.glob(os.path.join(project_dir(cwd), "*.md")), reverse=True):
-            if os.path.realpath(f) != exclude and has_content(f):
+        skip = set()
+        if "--exclude" in argv:
+            skip.add(os.path.realpath(os.path.expanduser(argv[argv.index("--exclude") + 1])))
+        own = session_file(cwd, current_session(), create=False) if current_session() else None
+        if own:
+            skip.add(os.path.realpath(own))
+        for f in newest_first(cwd):
+            if os.path.realpath(f) not in skip and has_content(f):
                 print(f)
                 return 0
         sys.stderr.write("no earlier handoff with content for this project\n")
@@ -308,18 +330,27 @@ def cli(argv):
         print(files[-1])
         return 0
     if argv[1] == "narrate":
-        path = os.path.expanduser(argv[argv.index("--file") + 1])
-        if not os.path.exists(path):
-            sys.stderr.write("no such handoff file: %s\n" % path)
-            return 1
         narrative = sys.stdin.read().strip()
         if not narrative:
             sys.stderr.write("empty narrative on stdin\n")
             return 1
-        text = read_text(path)
-        sid = re.search(r"Session: `([^`]*)`", text)
-        cwd = re.search(r"Worktree: `([^`]*)`", text)
-        write_snapshot(path, cwd.group(1) if cwd else os.getcwd(), sid.group(1) if sid else None, None, "handoff", narrative)
+        if "--file" in argv:
+            path = os.path.expanduser(argv[argv.index("--file") + 1])
+            if not os.path.exists(path):
+                sys.stderr.write("no such handoff file: %s\n" % path)
+                return 1
+            text = read_text(path)
+            sid = re.search(r"Session: `([^`]*)`", text)
+            wt = re.search(r"Worktree: `([^`]*)`", text)
+            cwd, sid = (wt.group(1) if wt else os.getcwd()), (sid.group(1) if sid else None)
+        else:
+            sid = current_session()
+            if not sid:
+                sys.stderr.write("CLAUDE_CODE_SESSION_ID is not set; pass --file PATH\n")
+                return 1
+            cwd = argv[argv.index("--cwd") + 1] if "--cwd" in argv else os.getcwd()
+            path = session_file(cwd, sid)
+        write_snapshot(path, cwd, sid, find_transcript(sid), "handoff", narrative)
         print(path)
         return 0
     sys.stderr.write(__doc__)

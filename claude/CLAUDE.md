@@ -96,7 +96,8 @@ not only when stuck:
 - Hooks keep a per-session handoff file (requests, files changed, commands
   and their outcome, open todos, last reply), saved before compaction and
   restored right after it — automatic, no command needed.
-- `/clear` always starts fresh. To carry work into a new session, do it
+- `/clear` always starts fresh: no hook injects anything into a cleared
+  session. To carry work into a new session, do it
   explicitly: `/handoff` → `/clear` (or quit) → `/pickup`. `/handoff`
   records what worked (with evidence), what failed, what was not tried, and
   next steps — the part a transcript digest cannot reconstruct — and

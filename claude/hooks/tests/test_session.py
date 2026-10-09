@@ -65,6 +65,8 @@ class Base(unittest.TestCase):
         write_transcript(self.transcript, TRANSCRIPT)
         self.env = dict(os.environ, CLAUDE_HOOK_STATE_DIR=self.state)
         self.env.pop("CLAUDE_HOOKS_DISABLE", None)
+        self.env.pop("CLAUDE_CODE_SESSION_ID", None)
+        self.env["HOME"] = tempfile.mkdtemp()  # isolates ~/.claude/projects transcript lookup
 
     def hook(self, script, args, payload, stdin=None):
         r = subprocess.run(
@@ -121,14 +123,20 @@ class HandoffTest(Base):
         self.assertIn("Ship the cancel fix", read(f))
         self.assertIn("cargo check -p hedger", read(f))
 
-    def test_clear_is_always_fresh(self):
-        # /clear means a fresh start, even right after /handoff: nothing from earlier sessions.
+    def test_clear_runs_nothing(self):
+        # /clear means a fresh start, even right after /handoff.
         self.narrate("### Goal\nShip the cancel fix\n")
-        ctx = self.ctx(session_id="yyyy8888", source="clear")
-        self.assertTrue(ctx.startswith("Session handoff file:"))
-        self.assertNotIn("Ship the cancel fix", ctx)
-        self.assertNotIn("cargo check -p hedger", ctx)
-        self.assertNotIn("Previous session", ctx)
+        before = self.files()
+        r = self.hook("session_handoff.py", ["start"], self.payload(session_id="yyyy8888", source="clear"))
+        self.assertEqual(r.stdout.strip(), "")  # no context injected at all
+        self.assertEqual(self.files(), before)  # no file created either
+
+    def test_settings_do_not_register_session_start_on_clear(self):
+        with open(os.path.join(os.path.dirname(HOOKS), "settings.json")) as fh:
+            hooks = json.load(fh)["hooks"]["SessionStart"]
+        for m in hooks:
+            self.assertNotIn("clear", m["matcher"])
+            self.assertNotEqual(m["matcher"], "*")
 
     def test_startup_gets_one_line_pointer_with_goal(self):
         self.narrate("### Goal\nShip the cancel fix\n")
@@ -138,20 +146,35 @@ class HandoffTest(Base):
         self.assertIn("/pickup", ctx)
         self.assertNotIn("cargo check -p hedger", ctx)
 
+    def test_start_fresh_project_injects_nothing(self):
+        r = self.hook("session_handoff.py", ["start"], self.payload(source="startup", transcript_path=None))
+        self.assertEqual(r.stdout.strip(), "")
+
+    def test_narrate_finds_own_session_from_env(self):
+        sid = "abcdef1234"
+        proj = os.path.join(self.env["HOME"], ".claude", "projects", "-x")
+        os.makedirs(proj)
+        write_transcript(os.path.join(proj, sid + ".jsonl"), TRANSCRIPT)
+        self.env["CLAUDE_CODE_SESSION_ID"] = sid
+        r = self.hook("session_handoff.py", ["narrate", "--cwd", self.cwd], None, stdin="### Goal\nShip it\n")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        [f] = self.files()
+        self.assertEqual(r.stdout.strip(), f)
+        self.assertTrue(f.endswith("-%s.md" % sid[:8]))
+        self.assertIn("Ship it", read(f))
+        self.assertIn("cargo check -p hedger", read(f))  # snapshot from the session's own transcript
+        self.env.pop("CLAUDE_CODE_SESSION_ID")
+        r = self.hook("session_handoff.py", ["narrate", "--cwd", self.cwd], None, stdin="x")
+        self.assertEqual(r.returncode, 1)  # no session id and no --file
+
     def test_previous_cli_skips_current_session_file(self):
-        prev = self.narrate("### Goal\nShip the cancel fix\n")
-        self.ctx(session_id="yyyy8888", source="clear", transcript_path=None)  # new session: empty file
-        mine = [f for f in self.files() if f != prev][0]
-        r = self.hook("session_handoff.py", ["previous", "--cwd", self.cwd, "--exclude", mine], None, stdin="")
+        prev = self.narrate("### Goal\nShip the cancel fix\n")  # session abcdef12
+        self.env["CLAUDE_CODE_SESSION_ID"] = "yyyy8888"
+        self.hook("session_handoff.py", ["end"], self.payload(session_id="yyyy8888"))  # new session, newer file
+        r = self.hook("session_handoff.py", ["previous", "--cwd", self.cwd], None, stdin="")
         self.assertEqual(r.stdout.strip(), prev)
         r = self.hook("session_handoff.py", ["previous", "--cwd", self.cwd, "--exclude", prev], None, stdin="")
         self.assertEqual(r.returncode, 1)
-
-    def test_start_fresh_project_only_names_file(self):
-        r = self.hook("session_handoff.py", ["start"], self.payload(source="startup", transcript_path=None))
-        ctx = json.loads(r.stdout)["hookSpecificOutput"]["additionalContext"]
-        self.assertTrue(ctx.startswith("Session handoff file:"))
-        self.assertNotIn("Previous session", ctx)
 
     def test_latest_cli(self):
         self.hook("session_handoff.py", ["end"], self.payload())

@@ -8,9 +8,8 @@ Pick up earlier work from a session handoff. Target: $ARGUMENTS
 1. Find the handoff to load:
    - If a path was given above, use it.
    - Otherwise run
-     `python3 "$HOME/.claude/hooks/session_handoff.py" previous --cwd "$PWD" --exclude "<this session's handoff file>"`,
-     using the "Session handoff file: ..." path named at the start of this
-     session, so this session's own file is skipped.
+     `python3 "$HOME/.claude/hooks/session_handoff.py" previous --cwd "$PWD"`.
+     It skips this session's own file (found from `$CLAUDE_CODE_SESSION_ID`).
    - If none is found, say so and stop.
 2. Read the whole file. It has the narrative (goal, what worked, what failed,
    not tried, next steps) and a snapshot (recent requests, files changed,
