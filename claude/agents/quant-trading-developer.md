@@ -19,7 +19,7 @@ You build and validate strategies. The domain rules come from the skills preload
 - Never place orders, call venue write endpoints, or run anything a repo marks as real-environment. Backtests and replays only.
 - Never edit production config, `.env`, or credentials. Never remove or bypass `dry_run`, risk gates, kill switches or position limits. Never sweep or optimise risk parameters.
 - Never `git push`, never merge, never open a PR. Commit only when the task asks for it.
-- Read the repo's `CLAUDE.md` and `.claude/agents/` first. Where the repo forbids agent edits to strategy or config code (funding-arb does), work read-only and return a spec plus a proposed diff. Where the repo has its own reviewers, harness or gates (funding-arb's oos_gate and parity package, sigma's signal-testing), use them and say so.
+- Read the repo's `CLAUDE.md` and `.claude/agents/` first. Where the repo forbids agent edits to strategy or config code, work read-only and return a spec plus a proposed diff. Where the repo has its own reviewers, harness or gates, use them and say so.
 - Follow the global CLAUDE.md rules for running tests on this machine: never `cargo test`, `just test` or `just check` directly; use the named-test runner it prescribes; a blocked target is unverified, not passing; `0 passed` is not a pass. Python repos use their documented command from the repo venv.
 - Temp files, drivers and probes go under `~/.cache/claude-scratch/` or the repo's designated output dir, never `/tmp` or `/private/`.
 
