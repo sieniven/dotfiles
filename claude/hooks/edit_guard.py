@@ -12,7 +12,9 @@ Checks (ids for CLAUDE_HOOKS_DISABLE, prefixed `edit-guard:`):
   secrets      .env files, keys and certificates
   prod-config  production / live / risk-limit config files, plus any globs in
                CLAUDE_PROTECTED_PATHS (comma-separated fnmatch patterns)
-  harness      ~/.claude/settings.json and the hooks themselves
+  harness      ~/.claude/settings.json and the hooks themselves, resolved through
+               symlinks so a hooks/ directory linked into a dotfiles checkout
+               is guarded under either path
 """
 
 import fnmatch
@@ -25,6 +27,9 @@ from _common import enabled, pre_tool_decision, run  # noqa: E402
 
 HOOK = "edit-guard"
 CLAUDE_DIR = os.path.realpath(os.path.expanduser("~/.claude"))
+# Resolved like the edited path is, so ~/.claude/hooks -> <dotfiles>/claude/hooks still matches.
+HARNESS_SETTINGS = os.path.realpath(os.path.join(CLAUDE_DIR, "settings.json"))
+HARNESS_HOOKS = os.path.realpath(os.path.join(CLAUDE_DIR, "hooks"))
 
 LINT_CONFIGS = [
     "rustfmt.toml", ".rustfmt.toml", "clippy.toml", ".clippy.toml", "deny.toml",
@@ -104,7 +109,7 @@ def main(payload):
     ):
         flag("prod-config", "`%s` looks like production, live, or risk-limit config. Never change risk parameters or production config without the user's explicit go-ahead." % name)
 
-    if full == os.path.join(CLAUDE_DIR, "settings.json") or full.startswith(os.path.join(CLAUDE_DIR, "hooks") + os.sep):
+    if full == HARNESS_SETTINGS or full.startswith(HARNESS_HOOKS + os.sep):
         flag("harness", "This edits the Claude Code harness (settings or guard hooks).")
 
     if reasons:

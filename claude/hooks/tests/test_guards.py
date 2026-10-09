@@ -198,6 +198,25 @@ class EditGuardTest(unittest.TestCase):
         p = self.touch("strategies/mm/params.json", "{}")
         self.assertEqual(self.decide("Edit", {"file_path": p, "old_string": "{}", "new_string": "{ }"}, {"CLAUDE_PROTECTED_PATHS": "*/strategies/*/params.json"}), "ask")
 
+    def test_harness_check_follows_symlinked_hooks(self):
+        # ~/.claude/hooks linked into a dotfiles checkout: an edit through either path is the same file.
+        repo_hooks = os.path.join(self.dir, "dotfiles", "claude", "hooks")
+        os.makedirs(repo_hooks)
+        hook = os.path.join(repo_hooks, "bash_guard.py")
+        with open(hook, "w") as fh:
+            fh.write("# guard\n")
+        claude = os.path.join(self.home, ".claude")
+        os.makedirs(claude)
+        os.symlink(repo_hooks, os.path.join(claude, "hooks"))
+        edit = {"old_string": "# guard", "new_string": "# weakened"}
+        self.assertEqual(self.decide("Edit", dict(edit, file_path=os.path.join(claude, "hooks", "bash_guard.py"))), "ask")
+        self.assertEqual(self.decide("Edit", dict(edit, file_path=hook)), "ask")
+        settings = os.path.join(claude, "settings.json")
+        with open(settings, "w") as fh:
+            fh.write("{}\n")
+        self.assertEqual(self.decide("Edit", {"file_path": settings, "old_string": "{}", "new_string": "{ }"}), "ask")
+        self.assertIsNone(self.decide("Edit", dict(edit, file_path=self.touch("dotfiles/claude/CLAUDE.md", "# guard\n"))))
+
 
 if __name__ == "__main__":
     unittest.main()
