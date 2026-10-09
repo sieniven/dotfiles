@@ -2,8 +2,20 @@
 
 Deterministic enforcement for the rules in `../CLAUDE.md`. Prose rules are
 requests; these hooks make the important ones binding. Registered in
-`../settings.json`; installed as `~/.claude/hooks/` (link this directory
-alongside `CLAUDE.md`, `agents/`, `skills/`).
+`../settings.json`.
+
+## Install
+
+Symlink `CLAUDE.md`, `agents/`, `commands/`, `hooks/`, `rules/` and `scripts/`
+from `~/.claude/` into this checkout, plus one link per tracked skill at
+`~/.claude/skills/<name>` (never the whole `skills/` directory: it also holds
+local-only skills). Copy `settings.json` instead of linking it; Claude Code
+rewrites that file and would replace a link, so re-copy it after changing the
+repo's. Create `~/.claude/CLAUDE.local.md` from `../CLAUDE.local.md.example`:
+`CLAUDE.md` imports it, and `bash_guard.py` arms its direct-tests deny only
+while it mentions `cargo test`. Hooks, skills and commands hot-reload through
+the links, so a branch checkout here is live in every open session.
+`python3 ~/.claude/scripts/lint_harness.py` then lints the installed tree.
 
 Python 3.8+ stdlib only, so macOS's system `python3` runs them. Every hook
 fails open: an internal error prints to stderr and the tool call proceeds.
@@ -15,7 +27,7 @@ fails open: an internal error prints to stderr and the tool call proceeds.
 | `suggest_compact.py` | PostToolUse `*`, SessionStart `compact` | Counts tool calls per session; at 60 and every 40 after, tells Claude to suggest `/handoff` + `/compact` at the next phase boundary. Resets on compaction |
 | `format_tracker.py` | PreToolUse `Edit\|Write\|MultiEdit` | On the first touch of a `.rs`/`.py` file per session, records whether it was already `rustfmt`/`ruff format` clean (ruff only where the project configures it) |
 | `stop_gate.py` | Stop | Formats edited files that were clean or new, once, instead of after every edit. Then blocks once (never when `stop_hook_active`) if code edited this turn still has debug leftovers (`dbg!`, `todo!`, `breakpoint()`, `pdb`, `console.log`, `debugger`) outside tests, or if no build/test/lint command or verifying subagent ran after the last code edit — unless the reply already says the change is unverified |
-| `edit_guard.py` | PreToolUse `Edit\|Write\|MultiEdit` | Asks before changing lint/format config (incl. lint tables in `pyproject.toml`/`Cargo.toml` and new crate-level `#![allow]`), `.env`/key files, production/live/risk-limit config, and the harness itself. New files are always allowed |
+| `edit_guard.py` | PreToolUse `Edit\|Write\|MultiEdit` | Asks before changing lint/format config (incl. lint tables in `pyproject.toml`/`Cargo.toml` and new crate-level `#![allow]`), `.env`/key files, production/live/risk-limit config, and the harness itself (`settings.json`, `hooks/`; symlinks resolved, so a linked dotfiles checkout counts). New files are always allowed |
 
 `bash_guard.py` parses the command, so `cd x && gh pr merge`, `bash -c '...'`,
 `timeout 60 cargo test` and `$(...)` are all seen, while text inside quoted

@@ -142,6 +142,8 @@ backtesting, or promoting a strategy:
   fixture set there for regression runs.
 - The dotfiles CI runs `claude/scripts/lint_harness.py` and the hook tests;
   run both locally before pushing harness changes.
+- How `~/.claude` is wired to this repo (what is linked, what is copied, the
+  `CLAUDE.local.md` requirement) is in `claude/hooks/README.md` under Install.
 
 ## Model tiering
 

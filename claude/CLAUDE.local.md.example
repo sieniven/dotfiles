@@ -1,0 +1,24 @@
+# Machine-local rules
+
+Copy this file to `~/.claude/CLAUDE.local.md` and fill it in. It stays
+untracked (`claude/CLAUDE.local.md` is gitignored) and `CLAUDE.md` imports it
+with `@~/.claude/CLAUDE.local.md`, so everything here loads in every session
+on this machine only, and the agents that defer to "the global CLAUDE.md" for
+machine rules see it through that import.
+
+Keep it to rules that hold on this machine and nowhere else: a test runner
+the machine forces, scratch directories, local tool paths. A repo's rules
+belong in that repo's `CLAUDE.md`; rules for everywhere belong in `CLAUDE.md`
+next to this file.
+
+`hooks/bash_guard.py` denies direct `cargo test`, `cargo bench`, `just test`
+and `just check` only while this file contains the literal text `cargo test`
+(`CLAUDE_GUARD_DIRECT_TESTS=1|0` overrides). Mention it when the machine
+routes tests through its own runner; leave it out otherwise.
+
+## This machine
+
+- **Tests** — how to run them here, and what must never run directly.
+- **Scratch** — where temp files, probe programs and build output go.
+- **Known refusals** — what the machine blocks, how the failure shows up, and
+  how to report a blocked target (unverified, not failing).
