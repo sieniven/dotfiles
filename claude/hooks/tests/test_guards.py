@@ -31,8 +31,8 @@ def run_hook(script, payload, env=None):
 
 
 class GitRepo:
-    def __init__(self, branch="main"):
-        self.dir = tempfile.mkdtemp()
+    def __init__(self, branch="main", root=None):
+        self.dir = tempfile.mkdtemp(dir=root)
         self.git("init", "-q", "-b", branch)
         self.git("config", "user.email", "t@example.com")
         self.git("config", "user.name", "t")
@@ -48,6 +48,13 @@ class GitRepo:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w") as fh:
             fh.write(text)
+        return path
+
+    def worktree(self, name):
+        """A linked worktree where Claude Code puts them: <repo>/.claude/worktrees/<name>."""
+        path = os.path.join(self.dir, ".claude", "worktrees", name)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        self.git("worktree", "add", "-q", "-b", name, path)
         return path
 
 
@@ -106,6 +113,25 @@ class BashGuardTest(unittest.TestCase):
         after = run_hook("bash_guard.py", {"tool_name": "Bash", "tool_input": {"command": "cargo test"}, "cwd": self.home}, e)[0]
         self.assertEqual(after, "deny")
         del env
+
+    def test_direct_tests_skip_linked_worktree(self):
+        repo = GitRepo("main")
+        wt = repo.worktree("feat-x")
+        self.assertEqual(self.decide("cargo test -p foo", cwd=repo.dir), "deny")
+        for cmd in ["cargo test -p foo", "cargo bench", "just test", "timeout 600 just check"]:
+            self.assertIsNone(self.decide(cmd, cwd=wt), cmd)
+        self.assertIsNone(self.decide("cd .claude/worktrees/feat-x && cargo test", cwd=repo.dir))
+        self.assertEqual(self.decide("cd ../../.. && cargo test", cwd=wt), "deny")
+
+    def test_direct_tests_allow_redirected_target_dir(self):
+        repo = GitRepo("main", root=self.home)
+        for cmd in ["CARGO_TARGET_DIR=$HOME/scratch/target cargo test", "CARGO_TARGET_DIR=~/scratch/target cargo test -p foo",
+                    "env CARGO_TARGET_DIR=~/scratch/target cargo test", "cargo test --target-dir ~/scratch/target",
+                    "CARGO_TARGET_DIR=~/scratch/target just test"]:
+            self.assertIsNone(self.decide(cmd, cwd=repo.dir), cmd)
+        for cmd in ["cargo test", "CARGO_TARGET_DIR=target cargo test", "CARGO_TARGET_DIR=./target cargo test",
+                    "CARGO_TARGET_DIR=/tmp/t cargo test", "RUST_LOG=debug cargo test"]:
+            self.assertEqual(self.decide(cmd, cwd=repo.dir), "deny", cmd)
 
     def test_force_push(self):
         repo = GitRepo("main")
