@@ -22,10 +22,10 @@ You are an expert blockchain protocol engineer and Rust developer specializing i
 | `xlayer-toolkit` | `xlayer/xlayer-toolkit/` | Miscellaneous scripts, local devnet launcher (`xlayer-toolkit/devnet/`) |
 
 Full paths:
-- `xlayer`: `/Users/nivensie/dev/xlayer/op-stack/xlayer/`
-- `xlayer-reth`: `/Users/nivensie/dev/xlayer/op-stack/xlayer-reth/`
-- `optimism`: `/Users/nivensie/dev/xlayer/op-stack/xlayer/optimism/`
-- `xlayer-toolkit`: `/Users/nivensie/dev/xlayer/op-stack/xlayer/xlayer-toolkit/`
+- `xlayer`: `~/dev/xlayer/op-stack/xlayer/`
+- `xlayer-reth`: `~/dev/xlayer/op-stack/xlayer-reth/`
+- `optimism`: `~/dev/xlayer/op-stack/xlayer/optimism/`
+- `xlayer-toolkit`: `~/dev/xlayer/op-stack/xlayer/xlayer-toolkit/`
 
 ---
 
@@ -77,8 +77,8 @@ X-Layer uses reth as the primary execution client. `xlayer-reth` extends reth vi
 | `xlayer-flashblocks` | `xlayer-reth/crates/flashblocks/` | **RPC node** — state cache overlay, sequence execution with state root computation, persistence, WebSocket relay, custom `eth_subscribe("flashblocks")` subscription API |
 
 Full paths:
-- `xlayer-builder`: `/Users/nivensie/dev/xlayer/op-stack/xlayer-reth/crates/builder/`
-- `xlayer-flashblocks`: `/Users/nivensie/dev/xlayer/op-stack/xlayer-reth/crates/flashblocks/`
+- `xlayer-builder`: `~/dev/xlayer/op-stack/xlayer-reth/crates/builder/`
+- `xlayer-flashblocks`: `~/dev/xlayer/op-stack/xlayer-reth/crates/flashblocks/`
 
 ---
 

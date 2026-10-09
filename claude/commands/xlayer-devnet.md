@@ -2,4 +2,4 @@ When this command is invoked, you MUST delegate the task to the `xlayer-devnet` 
 
 Pass the user's arguments (if any) as the task prompt to the agent. If no arguments are given, instruct the agent to run the full E2E validation checklist.
 
-For stress testing and load testing, the agent knows to use the adventure scripts at `/Users/nivensie/dev/xlayer/adventure/` — never use polycli directly.
+For stress testing and load testing, the agent knows to use the adventure scripts at `~/dev/xlayer/adventure/` — never use polycli directly.
