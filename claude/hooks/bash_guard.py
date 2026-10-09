@@ -12,7 +12,9 @@ Checks (ids for CLAUDE_HOOKS_DISABLE, prefixed `bash-guard:`):
   no-verify    deny  `--no-verify`, `git commit -n`, core.hooksPath overrides
   force-push   deny  force-push or delete of a protected branch; ask for other force-pushes
   direct-tests deny  `cargo test|bench`, `just test|check` where the machine-local
-                     CLAUDE.local.md routes tests through its own runner
+                     CLAUDE.local.md routes tests through its own runner; skipped
+                     inside a linked git worktree, and when CARGO_TARGET_DIR or
+                     --target-dir sends build output under $HOME outside the checkout
   destructive  deny  `rm -r` of /, ~ or an ancestor of ~; ask for `rm -r .`/`..`/`*`,
                      `git reset --hard`, `git clean -f`, `git checkout/restore .`,
                      docker volume/system prune
@@ -128,11 +130,16 @@ def split_simple_commands(cmd):
 
 
 def unwrap(argv, findings):
-    """Strip env assignments and wrappers; return the real argv."""
-    argv = list(argv)
+    """Strip env assignments and wrappers; return the real argv and the assignments seen."""
+    argv, assigns = list(argv), {}
+
+    def take_assign(tok):
+        name, _, value = tok.partition("=")
+        assigns[name] = value
+
     while argv:
         if ENV_ASSIGN.match(argv[0]):
-            argv.pop(0)
+            take_assign(argv.pop(0))
             continue
         head = os.path.basename(argv[0])
         if head == "nohup":
@@ -141,7 +148,9 @@ def unwrap(argv, findings):
             argv.pop(0)
             while argv and (argv[0].startswith("-") or ENV_ASSIGN.match(argv[0])):
                 opt = argv.pop(0)
-                if head in ("sudo", "nice") and opt in ("-u", "-g", "-n") and argv:
+                if ENV_ASSIGN.match(opt):
+                    take_assign(opt)
+                elif head in ("sudo", "nice") and opt in ("-u", "-g", "-n") and argv:
                     argv.pop(0)
             continue
         if head == "timeout":
@@ -154,7 +163,7 @@ def unwrap(argv, findings):
                 argv.pop(0)  # duration
             continue
         break
-    return argv
+    return argv, assigns
 
 
 def short_cluster(tok):
@@ -304,22 +313,61 @@ def direct_tests_active():
 
 
 DIRECT_TEST_MSG = (
-    "Don't run `%s` directly on this machine: use the named-test runner from the"
-    " machine-local rules (~/.claude/CLAUDE.local.md). If it cannot run the target,"
-    " report the target as unverified."
+    "Don't run `%s` directly in this checkout: use the named-test runner from the"
+    " machine-local rules (~/.claude/CLAUDE.local.md, plus the repo's own CLAUDE.local.md"
+    " where it has one). If it cannot run the target, report the target as unverified."
 )
 
 
-def check_cargo(argv, findings):
+def in_linked_worktree(cwd):
+    """True when the nearest enclosing checkout is a linked `git worktree` (its .git is a file)."""
+    path = os.path.realpath(cwd)
+    while True:
+        dot_git = os.path.join(path, ".git")
+        if os.path.exists(dot_git):
+            return os.path.isfile(dot_git)
+        parent = os.path.dirname(path)
+        if parent == path:
+            return False
+        path = parent
+
+
+def target_dir_redirected(target, cwd):
+    """True when cargo's target dir is sent under $HOME but outside the current checkout."""
+    if not target:
+        return False
+    full = resolve(cwd, target)
+    if not full.startswith(HOME + os.sep):
+        return False
+    top = os.path.realpath(git_out(cwd, "rev-parse", "--show-toplevel").strip() or cwd)
+    return full != top and not full.startswith(top + os.sep)
+
+
+def direct_tests_exempt(ctx, target_dir):
+    """The local rules lift the deny inside linked worktrees and for a redirected target dir."""
+    return in_linked_worktree(ctx.cwd) or target_dir_redirected(target_dir, ctx.cwd)
+
+
+def cargo_target_dir(rest, assigns):
+    for i, a in enumerate(rest):
+        if a == "--target-dir" and i + 1 < len(rest):
+            return rest[i + 1]
+        if a.startswith("--target-dir="):
+            return a.split("=", 1)[1]
+    return assigns.get("CARGO_TARGET_DIR")
+
+
+def check_cargo(argv, assigns, ctx, findings):
     rest = [a for a in argv[1:] if not a.startswith("+")]
     i = 0
     while i < len(rest) and rest[i].startswith("-"):
         i += 2 if rest[i] in ("-Z", "--config", "-C") else 1
     if i < len(rest) and rest[i] in ("test", "t", "bench") and direct_tests_active():
-        findings.add(DENY, "direct-tests", DIRECT_TEST_MSG % ("cargo " + rest[i]))
+        if not direct_tests_exempt(ctx, cargo_target_dir(rest, assigns)):
+            findings.add(DENY, "direct-tests", DIRECT_TEST_MSG % ("cargo " + rest[i]))
 
 
-def check_just(argv, findings):
+def check_just(argv, assigns, ctx, findings):
     args, i = argv[1:], 0
     one_arg = {"-f", "--justfile", "-d", "--working-directory", "--dotenv-path", "--dotenv-filename", "--shell", "--color", "--shell-arg"}
     while i < len(args) and args[i].startswith("-"):
@@ -330,7 +378,8 @@ def check_just(argv, findings):
         else:
             i += 1
     if i < len(args) and args[i] in ("test", "check") and direct_tests_active():
-        findings.add(DENY, "direct-tests", DIRECT_TEST_MSG % ("just " + args[i]))
+        if not direct_tests_exempt(ctx, assigns.get("CARGO_TARGET_DIR")):
+            findings.add(DENY, "direct-tests", DIRECT_TEST_MSG % ("just " + args[i]))
 
 
 def check_rm(argv, ctx, findings):
@@ -465,7 +514,7 @@ def analyze(command, ctx, findings, depth=0):
     if depth > 3:
         return
     for raw in split_simple_commands(command):
-        argv = unwrap(raw, findings)
+        argv, assigns = unwrap(raw, findings)
         if not argv:
             continue
         head = os.path.basename(argv[0])
@@ -483,9 +532,9 @@ def analyze(command, ctx, findings, depth=0):
         elif head == "gh":
             check_gh(argv, findings)
         elif head == "cargo":
-            check_cargo(argv, findings)
+            check_cargo(argv, assigns, ctx, findings)
         elif head == "just":
-            check_just(argv, findings)
+            check_just(argv, assigns, ctx, findings)
         elif head == "rm":
             check_rm(argv, ctx, findings)
         elif head == "docker":

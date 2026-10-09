@@ -22,7 +22,7 @@ fails open: an internal error prints to stderr and the tool call proceeds.
 
 | Hook | Event | What it does |
 |------|-------|--------------|
-| `bash_guard.py` | PreToolUse `Bash` | Denies `gh pr merge`, `nohup`, `--no-verify`, force-push/delete of `main`/`master`, direct `cargo test`/`just test` where `CLAUDE.local.md` routes tests elsewhere, `rm -r` of `/`/`~`, and commits that add private keys, known token formats or `.env`/key files. Asks before other force-pushes, `git reset --hard`, `git clean -f`, `rm -r .`/`..`, docker volume prunes, and generic `password = "..."` assignments in a commit |
+| `bash_guard.py` | PreToolUse `Bash` | Denies `gh pr merge`, `nohup`, `--no-verify`, force-push/delete of `main`/`master`, direct `cargo test`/`just test` where `CLAUDE.local.md` routes tests elsewhere (not inside a linked git worktree, and not when `CARGO_TARGET_DIR`/`--target-dir` sends output under `$HOME` outside the checkout), `rm -r` of `/`/`~`, and commits that add private keys, known token formats or `.env`/key files. Asks before other force-pushes, `git reset --hard`, `git clean -f`, `rm -r .`/`..`, docker volume prunes, and generic `password = "..."` assignments in a commit |
 | `session_handoff.py` | SessionStart (`startup\|resume\|compact`, never `clear`), PreCompact, SessionEnd | Keeps one handoff file per session under `~/.local/state/claude-hooks/handoffs/<project>/`: a snapshot digested from the transcript (requests, files changed, commands with ✓/✗, open todos, last reply) plus the narrative `/handoff` writes. Saves it before compaction and restores it right after. A new session gets a one-line pointer to the previous goal; a cleared session gets nothing. `/handoff` and `/pickup` find the session's own file via `$CLAUDE_CODE_SESSION_ID` (`narrate`, `previous`) |
 | `suggest_compact.py` | PostToolUse `*`, SessionStart `compact` | Counts tool calls per session; at 60 and every 40 after, tells Claude to suggest `/handoff` + `/compact` at the next phase boundary. Resets on compaction |
 | `format_tracker.py` | PreToolUse `Edit\|Write\|MultiEdit` | On the first touch of a `.rs`/`.py` file per session, records whether it was already `rustfmt`/`ruff format` clean (ruff only where the project configures it) |
@@ -31,7 +31,10 @@ fails open: an internal error prints to stderr and the tool call proceeds.
 
 `bash_guard.py` parses the command, so `cd x && gh pr merge`, `bash -c '...'`,
 `timeout 60 cargo test` and `$(...)` are all seen, while text inside quoted
-arguments and heredoc bodies (commit messages) is not.
+arguments and heredoc bodies (commit messages) is not. The direct-tests check
+follows `cd` to decide whether the command runs in a linked worktree, and reads
+`VAR=x cmd` and `env VAR=x cmd` prefixes for `CARGO_TARGET_DIR`; a separate
+`export CARGO_TARGET_DIR=...` command is not seen as a redirect.
 
 ## Switches
 
@@ -39,7 +42,7 @@ arguments and heredoc bodies (commit messages) is not.
 |----------|--------|
 | `CLAUDE_HOOKS=off` | Disable every hook here |
 | `CLAUDE_HOOKS_DISABLE=a,b` | Disable hook ids (`bash-guard`) or single checks (`bash-guard:secrets`) |
-| `CLAUDE_GUARD_DIRECT_TESTS=1\|0` | Force the direct-test check on/off (default: on iff `~/.claude/CLAUDE.local.md` mentions `cargo test`) |
+| `CLAUDE_GUARD_DIRECT_TESTS=1\|0` | Force the direct-test check on/off (default: on iff `~/.claude/CLAUDE.local.md` mentions `cargo test`). Even when on, it skips linked git worktrees and a target dir redirected under `$HOME` outside the checkout |
 | `CLAUDE_PROTECTED_BRANCHES=a,b` | Extra protected branches besides `main`, `master` |
 | `CLAUDE_PROTECTED_PATHS=glob,...` | Extra files `edit_guard` asks about (fnmatch on the absolute path) |
 | `CLAUDE_HANDOFF_MAX_CHARS` | Cap on handoff text injected at SessionStart (default 8000) |

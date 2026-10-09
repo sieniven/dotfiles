@@ -14,7 +14,17 @@ next to this file.
 `hooks/bash_guard.py` denies direct `cargo test`, `cargo bench`, `just test`
 and `just check` only while this file contains the literal text `cargo test`
 (`CLAUDE_GUARD_DIRECT_TESTS=1|0` overrides). Mention it when the machine
-routes tests through its own runner; leave it out otherwise.
+routes tests through its own runner; leave it out otherwise. The deny never
+applies inside a linked git worktree (`.claude/worktrees/<name>`, or any
+`git worktree add`), nor when `CARGO_TARGET_DIR`/`--target-dir` sends build
+output under `$HOME` outside the checkout, so write the rules here to match:
+say what a worktree session may run, and where a redirected target dir goes.
+
+A repo that needs its own routing (a runner that only knows that checkout)
+gets an untracked `CLAUDE.local.md` at its root, listed in
+`.git/info/exclude`, holding either the rules or one line importing them:
+`@~/.claude/local/<repo>.md`. Claude Code loads it in the main checkout and
+in every worktree under it.
 
 ## This machine
 
