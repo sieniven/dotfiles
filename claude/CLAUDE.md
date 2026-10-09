@@ -1,7 +1,8 @@
 # Global Context
 
-Rules that apply in every workspace. Language and domain guidance lives in
-skills; repo-specific detail belongs in that repo's own CLAUDE.md.
+Rules that apply in every workspace. Language conventions live in
+path-scoped rules, domain guidance in skills; repo-specific detail belongs in
+that repo's own CLAUDE.md.
 
 ## Hard constraints
 
@@ -107,21 +108,22 @@ not only when stuck:
   subtask), not mid-change. Don't start a large multi-file change with the
   window nearly full — hand off and compact first.
 
+## Rules
+
+One file per language in `~/.claude/rules/`, loaded automatically when a
+matching file is read or edited; subagents working from a diff read them
+explicitly: `rust.md` (`**/*.rs`).
+
 ## Skills
 
 When working under `~/dev`, load `quant-trading` (domain practice) for
 trading work, plus `quant-trading-research` for alpha or signal research,
 `quant-trading-backtesting` and `quant-trading-validation` when
-implementing, backtesting or promoting a strategy, and `rust` when the code
-is Rust. Add the venue skill when the work names that venue:
-`quant-trading-crypto-struct` for the CryptoStruct adapters and the engine,
-strategy and monitor repos that trade on them today, `quant-trading-apex`
-or `quant-trading-tt` for those venues:
+implementing, backtesting or promoting a strategy. Add the venue skill when
+the work names that venue: `quant-trading-crypto-struct` for the CryptoStruct
+adapters and the engine, strategy and monitor repos that trade on them today,
+`quant-trading-apex` or `quant-trading-tt` for those venues:
 
-- `rust` — language and runtime conventions. Its non-negotiables also load
-  automatically from the path-scoped rule `~/.claude/rules/rust.md` whenever
-  a `.rs` file is read or edited, so they apply even when the skill is not
-  picked.
 - `quant-trading` — quant trading domain expertise: market making, engine
   design, execution, market data, risk.
 - `quant-trading-research` — QR practice: hypothesis-first research loop,
