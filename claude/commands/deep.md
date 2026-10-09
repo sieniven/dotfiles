@@ -22,6 +22,12 @@ Follow this process:
      confirmed findings only; note the discard count.
    - Output: structured schemas between stages; final synthesis as a table
      or ranked list with file:line citations.
+   - Prompts: every finder states the objective and why it matters, not only
+     the literal query, so the agent can judge relevance. Finders apply a
+     pre-report gate (exact line, concrete failure, guards checked) and may
+     return zero findings.
+   - Completion: each agent's final output is its deliverable — no agent ends
+     on "waiting"; the orchestrator collects every stage before synthesis.
 
 3. **Show the plan before running.** Present phases, per-stage agent prompts
    (abridged), verification threshold, and rough agent count. Wait for
