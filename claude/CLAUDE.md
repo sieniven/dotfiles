@@ -113,7 +113,7 @@ When working under `~/dev`, load `quant-trading` (domain practice) plus
 `quant-trading-crypto-struct` (current-stack specifics) for trading work, and
 `rust` when the code is Rust. Add the venue skill, `quant-trading-apex` or
 `quant-trading-tt`, when the work names that venue; `quant-trading-research`
-for alpha or signal research; and `quant-trading-strategy-validation` when
+for alpha or signal research; and `quant-trading-validation` when
 implementing, backtesting, or promoting a strategy:
 
 - `rust` — language and runtime conventions. Its non-negotiables also load
@@ -134,7 +134,7 @@ implementing, backtesting, or promoting a strategy:
 - `quant-trading-research` — QR practice: hypothesis-first research loop,
   tick/L2 data hygiene, microstructure signals, statistical validation,
   multiple-testing discipline, cost-first reporting.
-- `quant-trading-strategy-validation` — QD practice: backtest fidelity and
+- `quant-trading-validation` — QD practice: backtest fidelity and
   optimism audit, parity and determinism, walk-forward and parameter
   robustness, TCA and markouts, promotion gates and kill criteria.
 

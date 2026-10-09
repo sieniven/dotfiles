@@ -1,5 +1,5 @@
 ---
-name: quant-trading-strategy-validation
+name: quant-trading-validation
 description: Quant developer (QD) practice for taking a strategy from research to production on an HFT / market-making / crypto-perp desk — backtest fidelity (fill rule, queue position, feed and order latency, cancel-fill races, venue matching semantics, fee and rebate tiers, funding), the mandatory optimism audit, backtest-to-live parity and determinism, purged walk-forward and parameter-plateau robustness, transaction cost analysis and markout reconciliation, shadow/paper/canary promotion gates and pre-registered kill criteria. Use when implementing or backtesting a strategy or signal, judging whether a backtest is believable, reviewing a parameter sweep or optimizer output, or deciding whether a strategy is ready for paper or live — even when the user only asks "does this backtest look right".
 ---
 
