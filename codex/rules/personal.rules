@@ -1,0 +1,25 @@
+# Native rules cover exact command prefixes; the Bash hook also checks wrappers.
+prefix_rule(
+    pattern = ["gh", "pr", "merge"],
+    decision = "forbidden",
+    justification = "Merging belongs to the user. Create the PR and return its link.",
+    match = ["gh pr merge 28 --squash"],
+    not_match = ["gh pr view 28"],
+)
+prefix_rule(
+    pattern = ["nohup"],
+    decision = "forbidden",
+    justification = "Use managed processes or tmux instead of nohup.",
+    match = ["nohup ./run.sh"],
+)
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "prompt",
+    justification = "Pushing requires the user's explicit request in the current turn.",
+    match = ["git push -u origin feature"],
+)
+# Only narrow read/build prefixes are ported as pre-approved outside the sandbox.
+# Arbitrary shell/Python, destructive commands and generic git/gh are not allowed
+# wholesale; guards and the normal approval policy remain in force.
+prefix_rule(pattern = ["git", ["status", "diff", "log", "show"]], decision = "allow")
+prefix_rule(pattern = ["cargo", ["check", "clippy", "build", "metadata", "tree"]], decision = "allow")
