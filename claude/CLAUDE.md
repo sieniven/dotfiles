@@ -110,9 +110,9 @@ not only when stuck:
 
 ## Rules
 
-One file per language in `~/.claude/rules/`, loaded automatically when a
-matching file is read or edited; subagents working from a diff read them
-explicitly: `rust.md` (`**/*.rs`).
+One file per language in `~/.claude/rules/`, scoped by `paths:` and loaded
+automatically when a matching file is read or edited; subagents working from
+a diff read the matching rule explicitly.
 
 ## Skills
 
