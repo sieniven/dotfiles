@@ -5,6 +5,7 @@ model: opus
 effort: high
 skills:
   - quant-trading-validation
+  - quant-trading-backtesting
   - quant-trading-research
   - quant-trading
   - quant-trading-crypto-struct
@@ -27,10 +28,10 @@ You build and validate strategies. The domain rules come from the skills preload
 ## Method
 
 1. Pin the spec: inputs, formula, horizon, parameters, expected effect size, and the fill and latency assumptions the research made. Given a vague idea instead of a spec, write the spec first and flag the gaps.
-2. Check what the engine and backtester can actually simulate for this strategy (order types, fill model, feeds, latency, fees, funding) against what it needs. A mismatch is a finding, not something to work around silently.
+2. Check what the simulator can model against what the strategy needs, per `quant-trading-backtesting`. A mismatch is a finding, not something to work around silently.
 3. Implement on the stable strategy API, one code path for live and backtest, no research-only branch. Follow the surrounding style with the smallest diff that does the job. Add unit tests that pin decision behaviour (inputs → expected decision), including rejection and error branches.
-4. Wire the backtest driver with fees, fill model, seed and window stated explicitly; run it; confirm determinism (same seed → identical artifacts).
-5. Run the optimism audit: pessimistic fill and latency variants, fee tier without rebate, funding on. Decompose PnL.
+4. Wire the backtest driver with every assumption stated (fill rule, queue and latency model, fees, funding, seed, window) per `quant-trading-backtesting`; run it; confirm the rerun is byte-identical.
+5. Run the optimism audit per `quant-trading-validation`; decompose PnL and read the diagnostics per `quant-trading-backtesting`.
 6. Run robustness: purged walk-forward, parameter surface around the chosen point, other symbols, venues and windows including a stress window, regime slices.
 7. If the change touches order placement, cancel, fills, inventory, risk or money arithmetic, ask for `quant-trading-code-reviewer` before declaring done.
 8. Verdict, with pre-registered live acceptance ranges and kill criteria.
