@@ -1,14 +1,14 @@
 ---
-name: quant-research
+name: quant-trading-research
 description: Quant researcher (QR) practice for an HFT / market-making / crypto-perp desk — hypothesis-first research loop, tick and L2 data hygiene, microstructure signal construction (book imbalance, microprice, order-flow imbalance, cross-venue lead-lag, funding and basis), evaluation by markout curves and IC under autocorrelation-aware statistics, multiple-testing discipline (trial log, deflated Sharpe, PBO, purged walk-forward), cost-first reporting. Use for alpha or signal research, "is this edge real", feature studies on order-book or trade data, funding or basis studies, and any analysis notebook or script under a research repo — even when the user only says "look into" or "check whether" some market effect.
 ---
 
 # Quant research practice
 
 How to find and validate short-horizon edges. Engine and execution mechanics
-live in `trading`; the platform's data and backtester facts live in
-`crypto-struct`; backtest fidelity and promotion gates live in
-`strategy-validation`.
+live in `quant-trading`; the platform's data and backtester facts live in
+`quant-trading-crypto-struct`; backtest fidelity and promotion gates live in
+`quant-trading-strategy-validation`.
 
 ## Research loop
 
@@ -118,7 +118,8 @@ live in `trading`; the platform's data and backtester facts live in
   maker fill probability at that depth. A rebate can be the whole edge —
   report PnL split into spread capture, rebate, funding, markout, inventory.
 - A maker edge computed at fill-on-touch is an upper bound; the fill
-  assumption must travel with the number (see `strategy-validation`).
+  assumption must travel with the number (see
+  `quant-trading-strategy-validation`).
 - Capacity: the size at which own flow moves the microprice or exhausts the
   queue. Edges in illiquid perps often fail at the minimum lot.
 

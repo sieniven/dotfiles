@@ -1,15 +1,15 @@
 ---
-name: crypto-struct
+name: quant-trading-crypto-struct
 description: The current CryptoStruct-based trading stack — internal WS gateway to all venues, Python tradingenginecs engine and its StrategyBase callbacks, engine-backtesting parity, the self-contained Rust mm/hedger bot, money normalization conventions, dry_run and RiskGate patterns, MetricSpec observability. Use when working in the existing engine/, strategy/, monitor/, or system/ repos under ~/dev.
 ---
 
 # CryptoStruct platform stack
 
 Facts about the current platform under `~/dev`, so they aren't rediscovered
-each session. Domain principles live in the `trading` skill. This stack is
-slated for replacement by an in-house low-latency Rust engine — keep changes
-here proportionate: fix correctness and risk gaps, don't micro-optimize
-latency in code built around a poll-driven gateway.
+each session. Domain principles live in the `quant-trading` skill. This stack
+is slated for replacement by an in-house low-latency Rust engine — keep
+changes here proportionate: fix correctness and risk gaps, don't
+micro-optimize latency in code built around a poll-driven gateway.
 
 ## Connectivity
 

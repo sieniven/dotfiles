@@ -37,12 +37,12 @@ repositories named `<group>-<name>`:
 
 ## Skills
 
-When working under `~/dev`, use `trading` (domain practice) plus
-`crypto-struct` (current-stack specifics) for trading work, and use `rust` when
-the code is Rust:
+When working under `~/dev`, use `quant-trading` (domain practice) plus
+`quant-trading-crypto-struct` (current-stack specifics) for trading work, and
+use `rust` when the code is Rust:
 
 - `rust` — language and runtime conventions.
-- `trading` — quant trading domain expertise: market making, engine design,
-  execution, market data, and risk.
-- `crypto-struct` — the existing CryptoStruct-based stack: gateway, engine
-  callbacks, money conventions, and known gaps.
+- `quant-trading` — quant trading domain expertise: market making, engine
+  design, execution, market data, and risk.
+- `quant-trading-crypto-struct` — the existing CryptoStruct-based stack:
+  gateway, engine callbacks, money conventions, and known gaps.

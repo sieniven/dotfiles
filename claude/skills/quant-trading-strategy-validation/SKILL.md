@@ -1,5 +1,5 @@
 ---
-name: strategy-validation
+name: quant-trading-strategy-validation
 description: Quant developer (QD) practice for taking a strategy from research to production on an HFT / market-making / crypto-perp desk — backtest fidelity (fill rule, queue position, feed and order latency, cancel-fill races, venue matching semantics, fee and rebate tiers, funding), the mandatory optimism audit, backtest-to-live parity and determinism, purged walk-forward and parameter-plateau robustness, transaction cost analysis and markout reconciliation, shadow/paper/canary promotion gates and pre-registered kill criteria. Use when implementing or backtesting a strategy or signal, judging whether a backtest is believable, reviewing a parameter sweep or optimizer output, or deciding whether a strategy is ready for paper or live — even when the user only asks "does this backtest look right".
 ---
 
@@ -7,9 +7,9 @@ description: Quant developer (QD) practice for taking a strategy from research t
 
 The quant developer's job is the gap between "the backtest says" and "this
 makes money live": build on the engine, prove the backtest is believable,
-gate promotion. Research statistics live in `quant-research`; engine and
-execution conventions in `trading`; the platform's backtester facts in
-`crypto-struct`.
+gate promotion. Research statistics live in `quant-trading-research`;
+engine and execution conventions in `quant-trading`; the platform's
+backtester facts in `quant-trading-crypto-struct`.
 
 ## Fidelity ladder
 
@@ -35,8 +35,8 @@ execution conventions in `trading`; the platform's backtester facts in
 - Latency: keep exchange and local timestamps on every event; declare a
   latency profile (p50/p95/p99 for feed, submit, amend, cancel). Promotion
   uses p95, stress uses p99; engine hot-path budgets still use p999 per
-  `trading`. An alpha whose half-life is shorter than the
-  order round trip is optimistic until shadow-validated.
+  `quant-trading`. An alpha whose half-life is shorter than the order round
+  trip is optimistic until shadow-validated.
 - Cancel-fill race: live, the fill can arrive after the cancel was sent; a
   backtest that cancels instantly hides adverse fills on stale quotes. Model
   cancel latency at least equal to submit latency.

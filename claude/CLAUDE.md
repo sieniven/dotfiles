@@ -109,25 +109,27 @@ not only when stuck:
 
 ## Skills
 
-When working under `~/dev`, load `trading` (domain practice) plus
-`crypto-struct` (current-stack specifics) for trading work, and `rust` when
-the code is Rust. Add `quant-research` for alpha or signal research and
-`strategy-validation` when implementing, backtesting, or promoting a strategy:
+When working under `~/dev`, load `quant-trading` (domain practice) plus
+`quant-trading-crypto-struct` (current-stack specifics) for trading work, and
+`rust` when the code is Rust. Add `quant-trading-research` for alpha or signal
+research and `quant-trading-strategy-validation` when implementing,
+backtesting, or promoting a strategy:
 
 - `rust` — language and runtime conventions. Its non-negotiables also load
   automatically from the path-scoped rule `~/.claude/rules/rust.md` whenever
   a `.rs` file is read or edited, so they apply even when the skill is not
   picked.
-- `trading` — quant trading domain expertise: market making, engine design,
-  execution, market data, risk.
-- `crypto-struct` — the existing CryptoStruct-based stack: gateway, engine
-  callbacks, money conventions, known gaps, research and backtester facts.
-- `quant-research` — QR practice: hypothesis-first research loop, tick/L2
-  data hygiene, microstructure signals, statistical validation,
+- `quant-trading` — quant trading domain expertise: market making, engine
+  design, execution, market data, risk.
+- `quant-trading-crypto-struct` — the existing CryptoStruct-based stack:
+  gateway, engine callbacks, money conventions, known gaps, research and
+  backtester facts.
+- `quant-trading-research` — QR practice: hypothesis-first research loop,
+  tick/L2 data hygiene, microstructure signals, statistical validation,
   multiple-testing discipline, cost-first reporting.
-- `strategy-validation` — QD practice: backtest fidelity and optimism audit,
-  parity and determinism, walk-forward and parameter robustness, TCA and
-  markouts, promotion gates and kill criteria.
+- `quant-trading-strategy-validation` — QD practice: backtest fidelity and
+  optimism audit, parity and determinism, walk-forward and parameter
+  robustness, TCA and markouts, promotion gates and kill criteria.
 
 ## Harness maintenance
 
@@ -136,8 +138,8 @@ the code is Rust. Add `quant-research` for alpha or signal research and
   skill, a hook, or memory, as diffs I approve.
 - After adding or changing a skill, rule or agent, measure it with the
   `skill-comply` skill instead of assuming it is followed; obligations that
-  keep failing become hooks. `trading-code-reviewer` has a seeded fixture set
-  there for regression runs.
+  keep failing become hooks. `quant-trading-code-reviewer` has a seeded
+  fixture set there for regression runs.
 - The dotfiles CI runs `claude/scripts/lint_harness.py` and the hook tests;
   run both locally before pushing harness changes.
 
@@ -158,8 +160,8 @@ over the default:
 
 | Agent | Model | Effort |
 |-------|-------|--------|
-| `Explore`, `code-reader`, `docs-lookup`, `implementer`, `trading-code-reviewer` | opus | medium |
-| `verifier`, `quant-researcher`, `quant-developer` | opus | high |
+| `Explore`, `code-reader`, `docs-lookup`, `implementer`, `quant-trading-code-reviewer` | opus | medium |
+| `verifier`, `quant-trading-researcher`, `quant-trading-developer` | opus | high |
 | `blockchain-protocol` | opus | session default |
 | `blockchain-unit-test`, `xlayer-devnet` | sonnet | session default |
 
