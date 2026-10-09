@@ -40,4 +40,5 @@ Record a handoff for this session. Focus: $ARGUMENTS
    ```
 
 4. Reply with the file path and a two-line summary. Tell the user they can now
-   `/clear` (the next session loads this handoff) or `/compact`.
+   `/clear` within 30 minutes to continue in a fresh context (the handoff is
+   carried over), or `/compact` to keep going here.

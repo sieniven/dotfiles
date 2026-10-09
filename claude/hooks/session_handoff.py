@@ -8,9 +8,12 @@ outcome, open todos, last reply) plus a narrative block (what worked with
 evidence, what failed, what was not tried, next steps) written by /handoff.
 
 Hook modes (argv[1]):
-  start       SessionStart: create this session's file, inject its path; on
-              `compact`/`resume`/`clear` inject the relevant handoff, on
-              `startup` a pointer to the previous one
+  start       SessionStart: create this session's file and inject its path.
+              After `compact`/`resume`, inject this session's snapshot. After
+              `/clear`, inject the previous handoff in full only if /handoff
+              wrote its narrative in the last CLAUDE_HANDOFF_CLEAR_WINDOW_MIN
+              minutes (an explicit "carry this over"); otherwise, and on
+              `startup`, add a one-line pointer with the previous goal
   precompact  PreCompact: refresh the snapshot before context is compacted
   end         SessionEnd: refresh the snapshot when the session closes
 
@@ -19,7 +22,8 @@ CLI modes:
   latest [--cwd DIR]    print the newest handoff path for a project
 
 Env: CLAUDE_HANDOFF_MAX_CHARS (default 8000), CLAUDE_HANDOFF_KEEP (30),
-CLAUDE_HANDOFF_MAX_AGE_DAYS for the startup pointer (7).
+CLAUDE_HANDOFF_MAX_AGE_DAYS for the startup pointer (7),
+CLAUDE_HANDOFF_CLEAR_WINDOW_MIN for carrying a handoff over /clear (30).
 """
 
 import datetime
@@ -40,6 +44,7 @@ EMPTY_NARRATIVE = "_Not written yet. Run /handoff to record what worked, what fa
 MAX_CHARS = int(os.environ.get("CLAUDE_HANDOFF_MAX_CHARS", "8000"))
 KEEP = int(os.environ.get("CLAUDE_HANDOFF_KEEP", "30"))
 MAX_AGE_DAYS = float(os.environ.get("CLAUDE_HANDOFF_MAX_AGE_DAYS", "7"))
+CLEAR_WINDOW_S = 60 * float(os.environ.get("CLAUDE_HANDOFF_CLEAR_WINDOW_MIN", "30"))
 
 
 # --------------------------------------------------------------------------
@@ -153,6 +158,11 @@ def render(meta, dg, narrative):
         "- Session: `%s` · Branch: `%s` · Worktree: `%s`" % (meta["session"], meta["branch"] or "-", meta["cwd"]),
         "- Updated: %s (%s)" % (meta["updated"], meta["trigger"]),
         "- Transcript: `%s`" % (meta["transcript"] or "-"),
+    ]
+    if meta.get("narrated"):
+        out.append("- Narrative written: %s (%d)" % (
+            datetime.datetime.fromtimestamp(meta["narrated"]).strftime("%Y-%m-%d %H:%M"), meta["narrated"]))
+    out += [
         "",
         "## Narrative",
         "",
@@ -193,6 +203,9 @@ def read_header(path):
     t = re.search(r"^- Transcript: `([^`]*)`", text, re.M)
     if t and t.group(1) != "-":
         meta["transcript"] = t.group(1)
+    w = re.search(r"^- Narrative written: .*\((\d+)\)$", text, re.M)
+    if w:
+        meta["narrated"] = int(w.group(1))
     return meta, narrative
 
 
@@ -207,6 +220,7 @@ def write_snapshot(path, cwd, session_id, transcript, trigger, narrative=None):
         "updated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         "trigger": trigger,
         "transcript": transcript,
+        "narrated": int(time.time()) if narrative is not None else old_meta.get("narrated"),
     }
     text = render(meta, digest(transcript), old_narrative if narrative is None else narrative)
     tmp = path + ".tmp"
@@ -230,6 +244,13 @@ def has_content(path):
 def read_text(path):
     with open(path, encoding="utf-8") as fh:
         return fh.read()
+
+
+def goal_line(narrative):
+    """First line of the narrative's Goal section, for a one-line pointer."""
+    m = re.search(r"###\s*Goal\s*\n+(.+)", narrative)
+    line = m.group(1) if m else (narrative.strip().splitlines() or [""])[0]
+    return clip(line.lstrip("-* "), 200)
 
 
 def capped(text, limit):
@@ -265,14 +286,16 @@ def on_start(payload):
         ]
         if others:
             prev = others[0]
-            if source == "clear":
-                parts.append("Handoff from the previous session:\n\n%s" % capped(read_text(prev), MAX_CHARS))
+            meta, narrative = read_header(prev)
+            fresh_handoff = narrative.strip() and time.time() - meta.get("narrated", 0) < CLEAR_WINDOW_S
+            if source == "clear" and fresh_handoff:
+                parts.append("Handoff carried over /clear (written with /handoff just before):\n\n%s" % capped(read_text(prev), MAX_CHARS))
             else:
-                _, narrative = read_header(prev)
-                note = "Previous session handoff for this project: `%s`. Read it if the task continues earlier work." % prev
-                if narrative.strip():
-                    note += "\n\nIts narrative:\n" + capped(narrative.strip(), 2000)
-                parts.append(note)
+                goal = goal_line(narrative) if narrative.strip() else "no narrative, snapshot only"
+                parts.append(
+                    "Previous session in this project: `%s` (%s). Ignore it unless the user's task continues that work."
+                    % (prev, goal)
+                )
     additional_context("SessionStart", "\n\n".join(parts))
     prune(cwd)
 
