@@ -1,6 +1,6 @@
 ---
 name: quant-trading-crypto-struct
-description: The current CryptoStruct-based trading stack — internal WS gateway to all venues, Python tradingenginecs engine and its StrategyBase callbacks, engine-backtesting parity, the self-contained Rust mm/hedger bot, money normalization conventions, dry_run and RiskGate patterns, MetricSpec observability. Use when working in the existing engine/, strategy/, monitor/, or system/ repos under ~/dev.
+description: The current CryptoStruct-based trading stack — internal WS gateway to all venues, Python tradingenginecs engine and its StrategyBase callbacks, engine-backtesting parity, the self-contained Rust mm/hedger bot, money normalization conventions, dry_run and RiskGate patterns, MetricSpec observability, Tardis research data and engine-backtesting fill-model defaults. Use when working in the existing engine/, strategy/, monitor/, system/, or research/ repos under ~/dev.
 ---
 
 # CryptoStruct platform stack
@@ -10,6 +10,11 @@ each session. Domain principles live in the `quant-trading` skill. This stack is
 slated for replacement by an in-house low-latency Rust engine — keep changes
 here proportionate: fix correctness and risk gaps, don't micro-optimize
 latency in code built around a poll-driven gateway.
+
+These facts are a snapshot of the code, not a spec. Where the source
+disagrees — a callback name, a default value, a gap that has since been
+closed — the source wins: say so, and propose the fix to this skill with
+`/learn`.
 
 ## Connectivity
 
@@ -112,8 +117,9 @@ latency in code built around a poll-driven gateway.
   backtest decision parity), `backtester/leakage_gate.py` (greppable leakage
   tripwire) and `optimizer/search.py` (refuses risk-tier keys in any grid).
   Reuse the pattern before writing a new one.
-- Repo-level research agents exist and shadow global agents of the same name:
-  sigma's `quant-researcher` (corpus claim filter), `signal-testing`,
+- Repo-level research agents exist in `.claude/agents/` of two repos: sigma's
+  `quant-researcher` (corpus claim filter), `signal-testing`,
   `backtest-report-writer`; funding-arb's `execution-cost-analyst`,
-  `pnl-attribution-analyst`, `basis-researcher` (all over mcp-trades). Use
-  them inside those repos.
+  `pnl-attribution-analyst`, `basis-researcher` (all over mcp-trades). Inside
+  those repos, prefer them over the global `quant-trading-researcher` — they
+  know the local data.
