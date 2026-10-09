@@ -87,6 +87,20 @@ not only when stuck:
   (file written, result saved), then consult the advisor before declaring
   done.
 
+## Sessions and context
+
+- Hooks keep a per-session handoff file (requests, files changed, commands
+  and their outcome, open todos, last reply). It is restored after
+  compaction, loaded in full after `/clear`, and offered as a pointer to the
+  next session in the same project.
+- Run `/handoff` before `/clear`, before a long break, or when the
+  compaction suggestion fires: it records what worked (with evidence), what
+  failed, what was not tried, and next steps — the part a transcript digest
+  cannot reconstruct.
+- Compact at phase boundaries (plan agreed, tests green, before switching
+  subtask), not mid-change. Don't start a large multi-file change with the
+  window nearly full — hand off and compact first.
+
 ## Skills
 
 When working under `~/dev`, load `trading` (domain practice) plus
