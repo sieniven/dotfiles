@@ -1,5 +1,5 @@
 ---
-name: trading
+name: quant-trading
 description: Quant trading domain expertise — market-making and quoting discipline, low-latency engine design, hot-path and backpressure rules, money arithmetic, exchange boundary handling, determinism and backtest parity, pre-trade risk. Use for market making, trading engine, execution, market data, or quant strategy work.
 ---
 
@@ -7,7 +7,7 @@ description: Quant trading domain expertise — market-making and quoting discip
 
 Domain expertise that holds regardless of stack. Language conventions live in
 the `rust` skill; the current CryptoStruct-based platform's specifics live in
-the `crypto-struct` skill.
+the `quant-trading-crypto-struct` skill.
 
 ## Market making
 

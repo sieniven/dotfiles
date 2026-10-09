@@ -1,6 +1,6 @@
 ---
 name: skill-comply
-description: Measures whether a skill, rule, or agent definition is actually followed, instead of assuming it is. Extracts the definition's checkable obligations into a spec, runs the target on scenarios at three prompt strictness levels (or on a seeded fixture set), has an independent grader score each run against the spec, and reports compliance per obligation with evidence and a fix for each gap — reword, move to a path-scoped rule, or promote to a hook. Use after writing or changing a skill, rule or agent, when one seems to be ignored, or to regression-test trading-code-reviewer against its fixtures.
+description: Measures whether a skill, rule, or agent definition is actually followed, instead of assuming it is. Extracts the definition's checkable obligations into a spec, runs the target on scenarios at three prompt strictness levels (or on a seeded fixture set), has an independent grader score each run against the spec, and reports compliance per obligation with evidence and a fix for each gap — reword, move to a path-scoped rule, or promote to a hook. Use after writing or changing a skill, rule or agent, when one seems to be ignored, or to regression-test quant-trading-code-reviewer against its fixtures.
 ---
 
 # skill-comply
@@ -15,7 +15,7 @@ of a Python pipeline.
 - **Target**: a path — `~/.claude/skills/<name>/SKILL.md`, `~/.claude/rules/<name>.md`,
   `~/.claude/agents/<name>.md`, or a repo's `.claude/...` equivalent.
 - **Mode**: `scenarios` (default) or `fixtures` when the target has a fixture set
-  under `fixtures/<target-name>/` next to this file (today: `trading-code-reviewer`).
+  under `fixtures/<target-name>/` next to this file (today: `quant-trading-code-reviewer`).
 - **Runs per scenario**: default 1; use 3 when deciding whether to change a
   definition (report pass^3 — all three runs compliant).
 

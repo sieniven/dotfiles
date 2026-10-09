@@ -6,7 +6,8 @@ description: Rust conventions — tokio vs OS threads, bounded channels and lock
 # Rust conventions
 
 Deviations from textbook Rust defaults. Where this file is silent, write
-idiomatic Rust. Latency budgets and domain concerns live in the `trading` skill.
+idiomatic Rust. Latency budgets and domain concerns live in the
+`quant-trading` skill.
 
 ## Runtime and threading
 

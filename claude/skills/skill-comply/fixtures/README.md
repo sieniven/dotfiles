@@ -28,7 +28,7 @@ with line numbers), then grade: verdict matches, every `must_find` reported
 as a finding citing a line in range, no `must_not_flag` reported as a
 finding. A case passes only if all three hold.
 
-## trading-code-reviewer
+## quant-trading-code-reviewer
 
 | Case | Seeded | Tests |
 |------|--------|-------|

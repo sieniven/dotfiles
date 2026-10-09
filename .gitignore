@@ -4,15 +4,15 @@ claude/CLAUDE.local.md
 # skills are allowlisted: anything not named here stays local
 claude/skills/*/
 !claude/skills/rust/
-!claude/skills/trading/
+!claude/skills/quant-trading/
 !claude/skills/flashblocks/
 !claude/skills/git-commit/
 !claude/skills/lark-tech-doc/
 !claude/skills/reth-trie/
 !claude/skills/xlayer/
 !claude/skills/pr-create/
-!claude/skills/quant-research/
-!claude/skills/strategy-validation/
+!claude/skills/quant-trading-research/
+!claude/skills/quant-trading-strategy-validation/
 !claude/skills/skill-comply/
 __pycache__/
 *.pyc

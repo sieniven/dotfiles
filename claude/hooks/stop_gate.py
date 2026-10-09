@@ -42,7 +42,7 @@ VERIFY = re.compile(
     r"|npm\s+(test|run\s+\S*(test|lint|build|typecheck)\S*)|pnpm\s+\S*(test|lint|build)|tsc\b|make\s+\S*(test|check|lint|build)\S*"
     r"|forge\s+(test|build)|tox|nox|bazel\s+(test|build)|shellcheck|bash\s+-n)"
 )
-VERIFY_AGENTS = {"implementer", "verifier", "quant-developer", "blockchain-unit-test", "trading-code-reviewer"}
+VERIFY_AGENTS = {"implementer", "verifier", "quant-trading-developer", "blockchain-unit-test", "quant-trading-code-reviewer"}
 ACK = re.compile(
     r"(?i)\b(unverified|not\s+(yet\s+)?(run|tested|verified|built)|didn'?t\s+(run|test|build)|did\s+not\s+(run|test|build)"
     r"|haven'?t\s+(run|tested|built)|have\s+not\s+(run|tested|built)|could\s?n[o']t\s+(run|test|build)|no\s+tests?\s+(were\s+)?run)\b"
