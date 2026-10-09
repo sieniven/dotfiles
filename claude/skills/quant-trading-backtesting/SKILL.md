@@ -45,7 +45,9 @@ models below, in [references/oss-backtesters.md](references/oss-backtesters.md).
 - Seeded randomness: one root seed, named substreams derived from it, so a
   draw in one component cannot shift another's. Pin the data snapshot (path
   and hash), code (commit) and config. Same inputs produce byte-identical
-  artifacts; any diff is a bug, and a rerun test should assert it.
+  artifacts; any diff is a bug. Prove it by running the same seed twice and
+  comparing the artifacts byte for byte; a seed sweep measures variance, not
+  reproducibility.
 - One code path: the strategy class that runs live runs in the simulator,
   against manager protocols the simulator implements. No research-only
   branch, no engine-only dependency in strategy logic.
@@ -184,8 +186,12 @@ and the simulator says what a colocation, tier or code upgrade buys.
   goes through your price); trade-driven at the head; an L2 queue model; L3
   FIFO. Say which rung produced every number.
 - Every number travels with its fill rule, queue model, latency profile, fee
-  tier and funding treatment. Run the optimistic and the pessimistic variant
-  and report the bracket, not the point.
+  tier, funding treatment, and the line that the replay has no market impact,
+  so the result holds only at small size. Run three things: the optimistic
+  variant, the pessimistic variant, and one baseline (a symmetric quoter at a
+  fixed spread, or the strategy with its signal or inventory control
+  removed). Report the bracket and the baseline, or write "no baseline run"
+  and why.
 - Silent fallbacks are poison: a maker order that becomes a taker after a
   timeout must be off, or the timeout matched to the quote lifetime, or the
   maker PnL contains taker fills nobody asked for.
@@ -196,9 +202,12 @@ and the simulator says what a colocation, tier or code upgrade buys.
 
 ## Benchmarking and reading a backtest
 
-Market-making diagnostics first, portfolio statistics second. Every figure
-is sliced by symbol, venue, session, volatility and spread regime, and
-reported over rolling windows, never one pooled number.
+The first table of any backtest report is the markout curve at two or more
+horizons, the fill ratio (fills over orders placed) and the PnL split into
+spread capture, adverse selection and fees; Sharpe and drawdown come after
+it. This holds when the ask is for one number: give the number, then that
+table. Every figure is sliced by symbol, venue, session, volatility and
+spread regime, and reported over rolling windows, never one pooled number.
 
 - **Markout curve** per fill at about 100 ms, 1 s, 5 s, 30 s and 5 min, by
   side and size bucket. Sub-second markouts read latency and quote response;
