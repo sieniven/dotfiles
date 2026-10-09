@@ -6,8 +6,10 @@ description: Quant trading domain expertise — market-making and quoting discip
 # Quant trading domain practice
 
 Domain expertise that holds regardless of stack. Language conventions live in
-the `rust` skill; the current CryptoStruct-based platform's specifics live in
-the `quant-trading-crypto-struct` skill.
+the `rust` skill; the CryptoStruct venue and the platform on it in
+`quant-trading-crypto-struct`; simulator design and backtest benchmarking in
+`quant-trading-backtesting`; research statistics in `quant-trading-research`;
+promotion in `quant-trading-validation`.
 
 ## Market making
 

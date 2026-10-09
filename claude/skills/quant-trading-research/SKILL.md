@@ -6,9 +6,9 @@ description: Quant researcher (QR) practice for an HFT / market-making / crypto-
 # Quant research practice
 
 How to find and validate short-horizon edges. Engine and execution mechanics
-live in `quant-trading`; the platform's data and backtester facts live in
-`quant-trading-crypto-struct`; backtest fidelity and promotion gates live in
-`quant-trading-validation`.
+live in `quant-trading`; the simulator, its fill, queue and latency models,
+backtest benchmarking and the platform's data and backtester facts live in
+`quant-trading-backtesting`; promotion gates in `quant-trading-validation`.
 
 ## Research loop
 
@@ -119,7 +119,7 @@ live in `quant-trading`; the platform's data and backtester facts live in
   report PnL split into spread capture, rebate, funding, markout, inventory.
 - A maker edge computed at fill-on-touch is an upper bound; the fill
   assumption must travel with the number (see
-  `quant-trading-validation`).
+  `quant-trading-backtesting`).
 - Capacity: the size at which own flow moves the microprice or exhausts the
   queue. Edges in illiquid perps often fail at the minimum lot.
 

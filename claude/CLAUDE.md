@@ -109,12 +109,14 @@ not only when stuck:
 
 ## Skills
 
-When working under `~/dev`, load `quant-trading` (domain practice) plus
-`quant-trading-crypto-struct` (current-stack specifics) for trading work, and
-`rust` when the code is Rust. Add the venue skill, `quant-trading-apex` or
-`quant-trading-tt`, when the work names that venue; `quant-trading-research`
-for alpha or signal research; and `quant-trading-validation` when
-implementing, backtesting, or promoting a strategy:
+When working under `~/dev`, load `quant-trading` (domain practice) for
+trading work, plus `quant-trading-research` for alpha or signal research,
+`quant-trading-backtesting` and `quant-trading-validation` when
+implementing, backtesting or promoting a strategy, and `rust` when the code
+is Rust. Add the venue skill when the work names that venue:
+`quant-trading-crypto-struct` for the CryptoStruct adapters and the engine,
+strategy and monitor repos that trade on them today, `quant-trading-apex`
+or `quant-trading-tt` for those venues:
 
 - `rust` — language and runtime conventions. Its non-negotiables also load
   automatically from the path-scoped rule `~/.claude/rules/rust.md` whenever
@@ -122,21 +124,25 @@ implementing, backtesting, or promoting a strategy:
   picked.
 - `quant-trading` — quant trading domain expertise: market making, engine
   design, execution, market data, risk.
+- `quant-trading-research` — QR practice: hypothesis-first research loop,
+  tick/L2 data hygiene, microstructure signals, statistical validation,
+  multiple-testing discipline, cost-first reporting.
+- `quant-trading-backtesting` — simulator practice: replay design and
+  determinism, L2/L3 data and queue position, matching semantics, latency
+  and jitter with the cancel-fill race, calibrating against live fills,
+  benchmarking and reading a backtest; the platform's backtester facts.
+- `quant-trading-validation` — QD practice: fidelity ladder and optimism
+  audit, parity against live, walk-forward and parameter robustness, TCA
+  and markouts, promotion gates and kill criteria.
 - `quant-trading-crypto-struct` — the CryptoStruct adapters and
-  engine-middleware's venue module for them, the legacy Python stack and
-  Rust bot that trade on them today, research and backtester facts.
+  engine-middleware's venue module for them, and the legacy Python stack
+  and Rust bot that trade on them today.
 - `quant-trading-apex` — the APEX venue: the vendor SDK and documents, the
   engine-middleware `apex` module, UAT tiers and live-safety rules, open
   questions.
 - `quant-trading-tt` — the TradingTechnologies venue: TT FIX and REST facts,
   the engine-middleware `tt` module, proven offline only, and what its live
   path still needs.
-- `quant-trading-research` — QR practice: hypothesis-first research loop,
-  tick/L2 data hygiene, microstructure signals, statistical validation,
-  multiple-testing discipline, cost-first reporting.
-- `quant-trading-validation` — QD practice: backtest fidelity and
-  optimism audit, parity and determinism, walk-forward and parameter
-  robustness, TCA and markouts, promotion gates and kill criteria.
 
 ## Harness maintenance
 
