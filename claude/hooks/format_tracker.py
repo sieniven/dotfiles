@@ -56,17 +56,44 @@ def find_up(start, names):
         d = parent
 
 
-def rust_edition(path):
+def cargo_keys(path: str) -> dict:
+    """A Cargo.toml's one-line `key = value` entries as {"table.key": raw value},
+    plus every table name. Enough TOML for the edition: tomllib needs 3.11 and
+    the hooks run under macOS's 3.9."""
+    keys, table = {}, ""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            lines = fh.read().splitlines()
+    except OSError:
+        return keys
+    for line in lines:
+        head = re.match(r"\s*(\[\[?)\s*([^\]]+?)\s*\]", line)
+        if head:
+            table = None if head.group(1) == "[[" else re.sub(r'[\s"]', "", head.group(2))
+            parts = (table or "").split(".")
+            for i in range(len(parts) if table else 0):
+                keys.setdefault(".".join(parts[: i + 1]), "")
+            continue
+        kv = re.match(r'\s*([\w.\-" ]+?)\s*=\s*(.*?)\s*(#[^"]*)?$', line)
+        if kv and table is not None:
+            key = re.sub(r'[\s"]', "", kv.group(1))
+            keys[table + "." + key if table else key] = kv.group(2)
+    return keys
+
+
+def rust_edition(path: str) -> str:
+    """The edition `cargo fmt` passes for this file's crate: its own, or under
+    `edition.workspace = true` the workspace root's `[workspace.package]` one."""
     cargo = find_up(path, ["Cargo.toml"])
-    if cargo:
-        try:
-            with open(cargo, encoding="utf-8", errors="replace") as fh:
-                m = re.search(r'^\s*edition\s*=\s*"(\d{4})"', fh.read(), re.M)
-            if m:
-                return m.group(1)
-        except OSError:
-            pass
-    return "2021"
+    keys = cargo_keys(cargo) if cargo else {}
+    edition = keys.get("package.edition", "")
+    if keys.get("package.edition.workspace") == "true" or re.match(r"\{\s*workspace\s*=\s*true\s*\}$", edition):
+        while cargo and "workspace" not in keys:
+            cargo = find_up(os.path.dirname(cargo), ["Cargo.toml"])
+            keys = cargo_keys(cargo) if cargo else {}
+        edition = ""
+    m = re.match(r"""["'](\d{4})["']$""", edition or keys.get("workspace.package.edition", ""))
+    return m.group(1) if m else "2021"
 
 
 def ruff_configured(path):
