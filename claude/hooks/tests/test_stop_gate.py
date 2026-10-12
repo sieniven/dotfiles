@@ -81,7 +81,7 @@ class StopGateTest(unittest.TestCase):
     def test_verified_after_last_edit_passes(self):
         p = self.write("src/lib.rs", "pub fn a() {}\n")
         for cmd in ["cargo check -p x", "cd crates && ./scripts/run-tests.sh core", "python3 -m pytest -q",
-                    "python3 -W error::ResourceWarning -m unittest discover -s t"]:
+                    "python3 -W error::ResourceWarning -m unittest discover -s t", "just pre-commit"]:
             out = self.stop([user("change a"), tool("Edit", {"file_path": p, "new_string": "b"}), tool("Bash", {"command": cmd}), say("Done.")])
             self.assertNotIn("decision", out, cmd)
 

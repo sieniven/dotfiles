@@ -82,6 +82,9 @@ class NativeEventsTest(unittest.TestCase):
         activity.record(dict(self.payload, hook_event_name="PostToolUse", tool_name="Bash", tool_input={"command": "python3 -m unittest"}, tool_response={"exit_code": 0}))
         self.assertEqual(stop_gate.unverified_edits(activity.load(self.payload)["events"]), [])
 
+    def test_just_pre_commit_counts_as_verification(self):
+        self.assertTrue(stop_gate.is_verify("just pre-commit", None))
+
     def test_unknown_outcome_does_not_count_as_pass(self):
         activity.record(dict(self.payload, hook_event_name="PostToolUse", tool_name="Bash", tool_input={"command": "cargo check"}, tool_response="Script running"))
         command = activity.load(self.payload)["commands"][0]

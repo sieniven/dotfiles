@@ -37,7 +37,7 @@ CODE_EXT = (
     ".sol", ".java", ".kt", ".swift", ".zig", ".sh",
 )
 VERIFY = re.compile(
-    r"\b(cargo\s+(\+\S+\s+)?(check|clippy|build|nextest|test|bench)|just\s+\S*(lint|check|test|build|boot)\S*"
+    r"\b(cargo\s+(\+\S+\s+)?(check|clippy|build|nextest|test|bench)|just\s+\S*(lint|check|test|build|boot|pre-commit)\S*"
     r"|pytest|python3?\b[^;&|\n]*?\s-m\s+(pytest|unittest|mypy)|ruff\s+check|mypy|pyright|go\s+(test|vet|build)"
     r"|npm\s+(test|run\s+\S*(test|lint|build|typecheck)\S*)|pnpm\s+\S*(test|lint|build)|tsc\b|make\s+\S*(test|check|lint|build)\S*"
     r"|forge\s+(test|build)|tox|nox|bazel\s+(test|build)|shellcheck|bash\s+-n)"
