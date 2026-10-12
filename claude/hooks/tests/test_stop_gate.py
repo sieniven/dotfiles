@@ -85,6 +85,17 @@ class StopGateTest(unittest.TestCase):
             out = self.stop([user("change a"), tool("Edit", {"file_path": p, "new_string": "b"}), tool("Bash", {"command": cmd}), say("Done.")])
             self.assertNotIn("decision", out, cmd)
 
+    def test_running_a_repos_pre_commit_check_verifies(self):
+        p = self.write("src/lib.rs", "pub fn a() {}\n")
+        for cmd in ["git hook run pre-commit", "git -C repo hook run pre-commit", ".git/hooks/pre-commit",
+                    "bash .githooks/pre-commit", "pre-commit run --all-files", "just pre-commit", "make pre-commit",
+                    "npm run pre-commit", "pnpm pre-commit"]:
+            out = self.stop([user("x"), tool("Edit", {"file_path": p, "new_string": "b"}), tool("Bash", {"command": cmd}), say("Done.")])
+            self.assertNotIn("decision", out, cmd)
+        for cmd in ["cat .git/hooks/pre-commit", "pre-commit install", "ls .git/hooks", "git commit -m x"]:
+            out = self.stop([user("x"), tool("Edit", {"file_path": p, "new_string": "b"}), tool("Bash", {"command": cmd}), say("Done.")])
+            self.assertEqual(out.get("decision"), "block", cmd)
+
     def test_check_before_edit_does_not_count(self):
         p = self.write("src/lib.rs", "pub fn a() {}\n")
         out = self.stop([user("x"), tool("Bash", {"command": "cargo check"}), tool("Edit", {"file_path": p, "new_string": "b"}), say("Done.")])
