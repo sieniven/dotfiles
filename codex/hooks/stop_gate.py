@@ -37,10 +37,11 @@ CODE_EXT = (
     ".sol", ".java", ".kt", ".swift", ".zig", ".sh",
 )
 VERIFY = re.compile(
-    r"\b(cargo\s+(\+\S+\s+)?(check|clippy|build|nextest|test|bench)|just\s+\S*(lint|check|test|build|boot|pre-commit)\S*"
+    r"\b(cargo\s+(\+\S+\s+)?(check|clippy|build|nextest|test|bench)|just\s+\S*(lint|check|test|build|boot)\S*"
     r"|pytest|python3?\b[^;&|\n]*?\s-m\s+(pytest|unittest|mypy)|ruff\s+check|mypy|pyright|go\s+(test|vet|build)"
     r"|npm\s+(test|run\s+\S*(test|lint|build|typecheck)\S*)|pnpm\s+\S*(test|lint|build)|tsc\b|make\s+\S*(test|check|lint|build)\S*"
-    r"|forge\s+(test|build)|tox|nox|bazel\s+(test|build)|shellcheck|bash\s+-n)"
+    r"|forge\s+(test|build)|tox|nox|bazel\s+(test|build)|shellcheck|bash\s+-n"
+    r"|git\s+(-C\s+\S+\s+)?hook\s+run\s+pre-commit|(just|make|task|npm\s+run|pnpm(\s+run)?|yarn(\s+run)?)\s+pre-commit\b)"
 )
 VERIFY_AGENTS = {"implementer", "verifier", "quant-trading-developer", "blockchain-unit-test", "quant-trading-code-reviewer"}
 ACK = re.compile(
@@ -58,10 +59,19 @@ TEST_PATH = re.compile(r"(^|/)(tests?|benches|examples)/|(_test|_tests|\.test|\.
 def is_verify(cmd, extra_rx):
     if VERIFY.search(cmd) or (extra_rx and extra_rx.search(cmd)):
         return True
-    # A test-runner script or binary as the command itself: run-tests.sh, nextest, ...
+    # A test-runner script or binary as the command itself (run-tests.sh,
+    # nextest, ...), or a repo's pre-commit hook run directly or through the
+    # pre-commit framework: .git/hooks/pre-commit, `pre-commit run`.
     for seg in re.split(r"[;&|\n]+", cmd):
         words = [w for w in seg.split() if "=" not in w]
-        if words and re.search(r"(?i)(test|check|lint)", os.path.basename(words[0])):
+        if words[:1] in (["sh"], ["bash"], ["zsh"]):
+            words = words[1:]
+        if not words:
+            continue
+        name = os.path.basename(words[0])
+        if re.search(r"(?i)(test|check|lint)", name):
+            return True
+        if name == "pre-commit" and ("/" in words[0] or words[1:2] == ["run"]):
             return True
     return False
 
