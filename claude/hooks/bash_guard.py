@@ -144,6 +144,11 @@ def unwrap(argv, findings):
         head = os.path.basename(argv[0])
         if head == "nohup":
             findings.add(DENY, "nohup", "`nohup` is banned: use tmux/screen, systemd, or `&` with proper process management.")
+        if head == "pkill" and any(
+            a == "-f" or (a.startswith("-") and not a.startswith("--") and "f" in a[1:])
+            for a in argv[1:]
+        ):
+            findings.add(DENY, "pkill-f", "`pkill -f` matches whole command lines and killed another session's rustc on 2026-10-13; match the exact process name with `pkill -x <name>`.")
         if head in WRAPPERS:
             argv.pop(0)
             while argv and (argv[0].startswith("-") or ENV_ASSIGN.match(argv[0])):

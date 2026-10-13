@@ -85,6 +85,12 @@ class BashGuardTest(unittest.TestCase):
         self.assertEqual(self.decide("nohup ./run.sh > out.log 2>&1 &"), "deny")
         self.assertEqual(self.decide("FOO=1 nohup python3 x.py"), "deny")
 
+    def test_pkill_f_denied(self):
+        for cmd in ["pkill -f 'e2e-node|mock-venue'", "pkill -lf mock-venue", "sleep 1; pkill -f rustc"]:
+            self.assertEqual(self.decide(cmd), "deny", cmd)
+        self.assertIsNone(self.decide("pkill -x 'e2e-node|mock-venue'"))
+        self.assertIsNone(self.decide("pgrep -lf mock-venue"))
+
     def test_no_verify_denied(self):
         for cmd in ["git commit --no-verify -m x", "git commit -nm x", "git push --no-verify",
                     "git -c core.hooksPath=/dev/null commit -m x"]:
