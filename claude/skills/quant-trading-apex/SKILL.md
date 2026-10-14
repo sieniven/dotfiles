@@ -26,13 +26,13 @@ description this skill compresses. Outside that repo — a strategy repo
 naming the `apex` feature, a monitor over the venue, a UAT run — this skill
 is what a session has.
 
-Snapshot: `engine-middleware` main at `1ad03f45` (2026-10-09), which
-includes PR #402's cancel interval. Vendor documents are the
-PerpetualContracts set — TradeAPI v1.08, MdUserAPI v1.02, Development Guide
-v1.4, Conformance v1.15 — which match the vendored SDK 1.3.1. These are a
-snapshot of the code and the documents, not a spec. Where the source
-disagrees, the source wins: say so, and propose the fix to this skill with
-`/learn`. A question only the venue can answer stays a question here.
+Snapshot: `engine-middleware` main at `ac2c1187` (2026-10-14), which includes
+#459's session-hours keys. Vendor documents are the PerpetualContracts set —
+TradeAPI v1.08, MdUserAPI v1.02, Development Guide v1.4, Conformance v1.15 —
+which match the vendored SDK 1.3.1. These are a snapshot of the code and the
+documents, not a spec. Where the source disagrees, the source wins: say so,
+and propose the fix to this skill with `/learn`. A question only the venue can
+answer stays a question here.
 
 ## The venue in one paragraph
 
@@ -103,23 +103,31 @@ build, under a 2 µs median budget (`apex_decode`), with no allocation proof.
 (`bad_stamp` is an empty `CalendarDate` or `UpdateTime`);
 `md_books_unheard` counts books still silent 30 s after a feed login.
 
-**Account truth.** Every venue statement rides the venue lane from the
-vendor thread; the duty states synthetic refusals, positions, bindings and
-funds on the source lane. Status mapping: a queueing status is `Ack` the
-first time for an id this run minted and `Statement` after; canceled or
-not-queueing is `Canceled`, carrying the traded volume; all-traded is a
-`Statement` whose cumulative completes the record. The six statuses have no
-suspended value; if the venue states a suspended order as not-queueing it
-reads as `Canceled`, which the venue has not said (V2). A refusal
-arrives as a reply with the venue's error code mapped to a `RejectCode`.
-Every order carries `hedge_flag` ('1', speculation, by default), `label` in
-`BusinessUnit` and `auto_suspend` as `IsAutoSuspend`; a statement no binding
-answers whose echoed label matches carries `OrderEvent::OURS`. Venue times
-go on `venue_ts`, composed as UTC+8 by analogy with depth and unchecked
-against a live fill. Positions have one owner and two triggers — the ladder
-once per login, a timer every `position_poll_secs` (5) while `Up` — asked
-over the member, assembled in a fold and stated per pair on the source lane;
-a `NET` row is read with the venue's sign, which the seat has only ever
+**Account truth.** Every venue statement rides the venue lane from the vendor
+thread; the duty states synthetic refusals, positions, bindings and funds on
+the source lane. Status mapping: a queueing status is `Ack` the first time for
+an id this run minted and `Statement` after; canceled or not-queueing is
+`Canceled`, carrying the traded volume; all-traded is a `Statement` whose
+cumulative completes the record. The six statuses have no suspended value; if
+the venue states a suspended order as not-queueing it reads as `Canceled`,
+which the venue has not said (V2). A refusal arrives as a reply with the
+venue's error code mapped to a `RejectCode`. Every order carries `hedge_flag`
+('1', speculation, by default), `label` in `BusinessUnit` and `auto_suspend`
+as `IsAutoSuspend`; a statement no binding answers whose echoed label matches
+carries `OrderEvent::OURS`. Venue times go on `venue_ts`. The venue's times
+are time of day on its UTC+8 clock with no date; `CalendarDate` is the date at
+insert and `TradingDay` the trading day, the next one for a night order, past
+weekends and holidays (venue, 2026-10-13). A night order lives on three
+calendar days, so the document's `day_session_open` sorts its times: at or
+after the insert's second is the evening on `CalendarDate`, earlier and before
+the day open is past midnight on the day after it, the rest is the day session
+on `TradingDay`. Without the keys the earlier time goes on `TradingDay`, wrong
+only in the stretch past midnight before a weekend or holiday.
+`day_session_open` is the pre-open, never the continuous open. A trade row's
+`CalendarDate` is its own. Positions have one owner and two triggers — the
+ladder once per login, a timer every `position_poll_secs` (5) while `Up` —
+asked over the member, assembled in a fold and stated per pair on the source
+lane; a `NET` row is read with the venue's sign, which the seat has only ever
 answered flat. Funds are per member (`ReqQryPartAccount`), summed into one
 `AccountEvent::Funds` in millionths of a currency the venue does not name.
 
@@ -161,19 +169,18 @@ timeout, `0x2003` error message.
 
 **Recovery.** The ladder asks instruments first — one query per document
 instrument, the tick compared and the multiplier where the document states
-one; a mismatch or an unlisted
-instrument is `Fatal` until the document is fixed — then orders, trades and
-positions in that order, orders before trades because order rows carry the
-cumulative. Each question waits 10 s and is asked three times under fresh id
-runs; a question given up on is `Fatal`. Ordinary recovery is a login retry
-of at most 15 s, a 1 s quiet period and four answers at the venue's pace; the
-worst case, 120 s, runs past the engine's 90 s dwell, after which the node
-stops and an operator's `Start` restarts the ladder. The private stream is
-subscribed in resume mode, so every login replays order and trade returns
-from the flow directory's position. `orders_resync: whole` (the default) asks
-for every order of the day and closes what the answer omits; `changed` asks
-since the sync point, right only if the venue filters on update time, which
-is open.
+one; a mismatch or an unlisted instrument is `Fatal` until the document is
+fixed — then orders, trades and positions in that order, orders before trades
+because order rows carry the cumulative. Each question waits 10 s and is asked
+three times under fresh id runs; a question given up on is `Fatal`. Ordinary
+recovery is a login retry of at most 15 s, a 1 s quiet period and four answers
+at the venue's pace; the worst case, 120 s, runs past the engine's 90 s dwell,
+after which the node stops and an operator's `Start` restarts the ladder. The
+private stream is subscribed in resume mode, so every login replays order and
+trade returns from the flow directory's position. The orders question is
+always asked whole and closes what the answer omits: the venue filters it on
+`InsertTime` (answered 2026-10-12), so a since-window would miss an older
+order's end.
 
 **Rate budget.** The venue blocks silently past the seat's quota, so the
 count is kept here: `sends_per_second` (50 by default, the figure of a
@@ -212,7 +219,7 @@ required keys have no fallback):
 | `scope` | `single` | `manager` selects the member's private stream |
 | `position_poll_secs` | 5 | 0 never asks |
 | `sends_per_second` | 50 | 0 unmetered; several nodes on one seat split it |
-| `orders_resync` | `whole` | or `changed` |
+| `night_session_close`, `day_session_open` | absent | `HH:MM:SS` on the venue clock, set together; the day open is the pre-open, not the continuous open |
 | `label` | absent | at most 20 printable ASCII, echoed in `BusinessUnit` |
 | `hedge_flag` | `speculation` | `arbitrage`, `hedge`, `market_maker` |
 | `auto_suspend` | `false` | semantics unknown; a switch for probing |
@@ -270,16 +277,12 @@ to check a candidate build. Live-safety facts to hold onto:
 
 Only the venue can answer the first group; the module fails closed meanwhile.
 
-- The position answer has only ever been flat, so the `NET` sign is
-  unverified; if it is wrong, every position reads inverted.
-- `IsAutoSuspend`: does the venue suspend on disconnect, how is a suspended
-  order stated, is there any cancel-on-disconnect? No disconnect protection
-  is armed; orders left resting when the process dies stay at the venue.
-- The market-data topic id, and whether the seat is Single Trade or Manage
-  Trade (`SubscribeUserTopic` against `SubscribePrivateTopic`; the wrong one
-  returns no orders and no trades, with no error).
-- Whether the order query's `time_start` reads insert or update time, which
-  decides `orders_resync: changed`.
+- Answered 2026-10-09/12 on #382: a `NET` row is signed; `IsAutoSuspend` is
+  suspend-on-disconnect and the seat re-activates or deletes each order after
+  re-login; topic 111, `scope: single`; the orders query filters on
+  `InsertTime`. Still open: the status a suspended order shows, and the
+  clock times for the two session-hour keys, which come from the venue's
+  published schedule, not a question.
 - The venue has said amend is unsupported in production (V11); the node reads
   that as an amend going unchecked against limits and band, so the engine's
   `venue_limits` gate holds amends to both pairs.
@@ -303,6 +306,9 @@ item: fix it, tick it in #382, and move the venue document with it.
   never register a front, never share a flow directory between sessions.
 - `dry_run` first on every kind of request; the rate token before the id;
   places and amends stop at the cancel reserve, and cancels may spend it.
+- Date a venue row from its own fields and the document's hours, never from
+  receipt on the node's clock: a row replayed after an outage or by the
+  orders query must stamp exactly as it did live.
 - Every id across the seam is a `NonZeroU64` under a restart-stable mapping;
   a wire id is bound before the send and resolvable after a terminal.
 - A callback never waits, never allocates in steady state, and never logs
@@ -336,3 +342,4 @@ Both readings are recorded; neither is resolved here.
 | File | Read it when |
 | --- | --- |
 | [references/vendor-api.md](references/vendor-api.md) | Touching the foreign boundary or a callback; mapping an error code; reading a conformance case; the login, query, topic and resume semantics; the network and DR facts |
+| The PDFs under `~/dev/apex/connectivity/*/doc` | Read with `pypdf` from the user site, so `python3` without `-I`. They give the session structure (guide p6–7, conformance 3.6.11: night orders carry into the trading day's morning and afternoon, the end-of-day cycle deletes the rest) and no clock times. |
