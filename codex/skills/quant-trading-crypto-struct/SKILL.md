@@ -133,15 +133,19 @@ and a login with no `capabilities` lists nothing. There is no instrument
 status gate. An exchange-side timeout refuses a cancel `InDoubt` and an
 amend `Unknown` and keeps a place's binding, all **without** the `Down` the
 contract pairs with `InDoubt`, because a `Down` here re-dials every account
-and may fire the disconnect cancel. A cancel refused `ORDER_NOT_FOUND`
+and may fire the disconnect cancel; a kept place unheard past the bracket
+hold's bound (`tentative_reject_secs` + 2 × `heartbeat_secs`, 13 s) has its
+account re-dialled, counted `place_timeouts_redialed`, a ~14 s `Down`. A
+cancel refused `ORDER_NOT_FOUND`
 before its order confirmed is answered `UnknownOrder` and sent once more on
 the order's next word; `ACCESS_DENIED` reads as `UnknownOrder`.
 
 **Identity.** The engine's client id never reaches the venue: an own order's
 uuid is spelled from the wire id and the instance's discriminator, with the
 amend counter in `clientOrderId`, so two nodes on one account are safe only
-with different instance names, and `ORDER_ID_DUPLICATE` (`id_collisions`) is
-the backstop. The run second is taken on the first slice whose clock reads;
+with different instance names; `ORDER_ID_DUPLICATE` counts `id_collisions`, as
+do two live orders whose exchange ids fold alike (`007`/`7`), dropped and never
+merged. The run second is taken on the first slice whose clock reads;
 a run second past 30 bits is `Fatal`. A venue id is the exchange's id where
 decimal and its FNV-1a hash otherwise; an own order the venue has not yet
 named carries the synthetic `wire | 1 << 63` toward the engine. Bindings
@@ -171,16 +175,19 @@ status after a not-OK one, bracketed per account so what the answer omits
 is closed; the bracket stays open while places on that connection are
 unconfirmed, bounded by `tentative_reject_secs` plus twice `heartbeat_secs`.
 Two asks per question, then `Fatal`. A lost feed restarts recovery without
-asking order entry again. Down to up is about 14 s; the worst case for the
-login question, about 83 s at the defaults, is held inside the engine's
-90 s dwell by a build-time check. There is **no position poll** and no sync
+asking order entry again. The link's backoff starts over only when an answer
+is taken whole; a connection gone before its answer doubles it and spends an
+ask (`drops_unanswered`). Down to up is about 14 s; the worst case for the
+login question, about 84 s at the defaults (1 s and 2 s backoffs, then the
+settle hold), is held inside the engine's 90 s dwell by a build-time check.
+There is **no position poll** and no sync
 point: pushes on change are the only anchor, so nothing bounds the age of
 the last statement while `Up`. An order an answer omits while it still
 rests is closed `NotAtVenue` and keeps resting with no record anyone can
 cancel, an engine-side re-open tracked in issue #386.
 
 **Rate limits.** Each account has its own one-second window of
-`sends_per_second` (100): a place stops at 75, an amend at 87, a cancel may
+`sends_per_second` (100): a place or an amend stops at 75, a cancel may
 spend all 100, and a test pins that no burst of places or amends can spend
 the cancels' share. `rateLimitLoad` pushes are indicative gates: a place is
 refused at a place or cancel load of 0.75, an amend at 0.875, never a
@@ -215,7 +222,7 @@ source lane (2 048).
 | `order_entry.url` | required | the Trading Adapter |
 | `order_entry.accounts` | required | numeric ids per engine account, at most 32 |
 | `order_entry.heartbeat_secs` | 5 | per account connection |
-| `order_entry.login_timeout_secs` | 30 | above the adapter's 28 s; capped at 33 by the dwell check |
+| `order_entry.login_timeout_secs` | 30 | above the adapter's 28 s; capped at 32 by the dwell check |
 | `order_entry.sends_per_second` | 100 | 0 unmetered |
 | `order_entry.batch_places` | `false` | batch places and amends like cancels |
 | `order_entry.cancel_batch_max` | 10 | 1 to 16 |
@@ -291,7 +298,7 @@ Only a live deployment can answer the first group; the module fails safe.
 
 Departures still open on the module side: fills of `type: OTHER` and of
 never-adopted strangers are not booked; no position poll anchors an account
-while `Up`; a rate-refused cancel is never re-sent; an omitted resting order
+while `Up`; an omitted resting order
 is closed `NotAtVenue` and then judged `Buried`; no venue metadata is
 checked; every order-entry socket is read every slice; three links go
 unwatched. One PR per item, ticked in #386, the venue document moving with

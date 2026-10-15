@@ -9,6 +9,8 @@ command substitutions, `bash -c` / `eval` strings, and wrappers such as
 Checks (ids for CLAUDE_HOOKS_DISABLE, prefixed `bash-guard:`):
   merge        deny  `gh pr merge`, merge via `gh api`          (never merge a PR)
   nohup        deny  `nohup`                                     (never use nohup)
+  pkill-f      deny  `pkill -f`: it matches whole command lines, so it kills other
+                     sessions' processes; `pkill -x <name>` matches the name exactly
   no-verify    deny  `--no-verify`, `git commit -n`, core.hooksPath overrides
   force-push   deny  force-push or delete of a protected branch; ask for other force-pushes
   direct-tests deny  `cargo test|bench`, `just test|check` where the machine-local

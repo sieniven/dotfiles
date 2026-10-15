@@ -1,11 +1,14 @@
 """Track stable Codex hook events instead of parsing a private transcript format."""
 import json
 import fcntl
+import os
 from pathlib import Path
 import re
 
 from _common import state_dir
 from patches import edits, full_path
+
+TRAIL_CAP = 300
 
 
 def state_path(payload):
@@ -29,9 +32,28 @@ def save(payload, data):
     tmp.replace(path)
 
 
+def _trail(data, cwd, command=None):
+    """Session-wide working directories and git commands, read by scripts/session_cleanup.py.
+
+    Kept across turns, unlike `events` and `commands`, so a long session still
+    knows which worktrees it created and worked in.
+    """
+    if not cwd:
+        return
+    cwds = data.setdefault("cwds", [])
+    if cwd not in cwds:
+        cwds.append(cwd)
+        del cwds[:-TRAIL_CAP]
+    if command and "git" in command:
+        git = data.setdefault("git_commands", [])
+        git.append([cwd, command[:2000]])
+        del git[:-TRAIL_CAP]
+
+
 def _record(payload):
     data = load(payload)
     event = payload.get("hook_event_name")
+    _trail(data, payload.get("cwd"))
     if event == "UserPromptSubmit":
         turn = payload.get("turn_id")
         # Turn-scoped events keep child verification from passing a parent's
@@ -59,6 +81,8 @@ def _record(payload):
                 exit_code = int(m[1]) if m else None
             data["events"].append(["Bash", {"command": command, "exit_code": exit_code}])
             data["commands"] = (data["commands"] + [{"cmd": command[:500], "exit_code": exit_code}])[-30:]
+            workdir = inp.get("workdir") or inp.get("cwd")
+            _trail(data, os.path.join(payload.get("cwd") or "", workdir) if workdir else payload.get("cwd"), command)
         elif name == "update_plan":
             data["todos"] = inp.get("plan")
         data["events"] = data["events"][-1000:]

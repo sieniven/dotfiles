@@ -91,7 +91,7 @@ model capabilities. Both slugs were verified in the local account model catalog.
 | `CLAUDE.md` | Independent global `AGENTS.md`; existing repo Claude guidance is read-only fallback when native guidance is absent |
 | `@CLAUDE.local.md` | Explicit local-context instructions and lifecycle loader |
 | Language `paths:` rules | Language skills plus a tool-event context loader; read matching rules explicitly for diffs or unrecognized read tools |
-| Commands | `$handoff`, `$pickup`, `$learn`, `$deep`, `$blockchain-unit-test`, `$xlayer-devnet` |
+| Commands | `$handoff`, `$pickup`, `$cleanup`, `$learn`, `$deep`, `$blockchain-unit-test`, `$xlayer-devnet` |
 | Advisor / Workflow | Explicitly approved native delegation and verifier review; no pretend advisor or Workflow API |
 | Agent memory | Proposed durable notes via `$learn`, or Codex handoffs; existing Claude session memories are not imported |
 | Ralph plugin | `$ralph-loop` with immutable check, iteration cap and progress stop condition |
@@ -122,7 +122,10 @@ never Claude state. Handoffs digest stable tool events, not Claude JSONL. Comman
 outcomes are unknown unless an exit code is observed; only a successful check
 after the last edit counts as verification. `Stop` formatting changes require
 another check or an explicit unverified report. `$handoff` accepts `--session`
-or `--file` if `CODEX_THREAD_ID` is unavailable. New sessions get a pointer only;
+or `--file` if `CODEX_THREAD_ID` is unavailable. The activity record also keeps
+each session's working directories and git commands, so `$cleanup`
+(`scripts/session_cleanup.py`, run outside the sandbox) can find the worktrees a
+session used; sessions recorded before that have none and need names. New sessions get a pointer only;
 a `clear` event never injects old task state. Native tool hooks do not cover every
 hosted/specialized tool path or shell-written file; written rules still apply.
 
