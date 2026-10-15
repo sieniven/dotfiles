@@ -9,6 +9,8 @@ command substitutions, `bash -c` / `eval` strings, and wrappers such as
 Checks (ids for CODEX_HOOKS_DISABLE, prefixed `bash-guard:`):
   merge        deny  `gh pr merge`, merge via `gh api`          (never merge a PR)
   nohup        deny  `nohup`                                     (never use nohup)
+  pkill-f      deny  `pkill -f`: it matches whole command lines, so it kills other
+                     sessions' processes; `pkill -x <name>` matches the name exactly
   no-verify    deny  `--no-verify`, `git commit -n`, core.hooksPath overrides
   force-push   deny  force-push or delete of a protected branch; ask for other force-pushes
   direct-tests deny  `cargo test|bench`, `just test|check` where the machine-local
@@ -144,6 +146,11 @@ def unwrap(argv, findings):
         head = os.path.basename(argv[0])
         if head == "nohup":
             findings.add(DENY, "nohup", "`nohup` is banned: use tmux/screen, systemd, or `&` with proper process management.")
+        if head == "pkill" and any(
+            a == "-f" or (a.startswith("-") and not a.startswith("--") and "f" in a[1:])
+            for a in argv[1:]
+        ):
+            findings.add(DENY, "pkill-f", "`pkill -f` matches whole command lines and killed another session's rustc on 2026-10-13; match the exact process name with `pkill -x <name>`.")
         if head in WRAPPERS:
             argv.pop(0)
             while argv and (argv[0].startswith("-") or ENV_ASSIGN.match(argv[0])):

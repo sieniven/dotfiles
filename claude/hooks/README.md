@@ -22,7 +22,7 @@ fails open: an internal error prints to stderr and the tool call proceeds.
 
 | Hook | Event | What it does |
 |------|-------|--------------|
-| `bash_guard.py` | PreToolUse `Bash` | Denies `gh pr merge`, `nohup`, `--no-verify`, force-push/delete of `main`/`master`, direct `cargo test`/`just test` where `CLAUDE.local.md` routes tests elsewhere (not inside a linked git worktree, and not when `CARGO_TARGET_DIR`/`--target-dir` sends output under `$HOME` outside the checkout), `rm -r` of `/`/`~`, and commits that add private keys, known token formats or `.env`/key files. Asks before other force-pushes, `git reset --hard`, `git clean -f`, `rm -r .`/`..`, docker volume prunes, and generic `password = "..."` assignments in a commit |
+| `bash_guard.py` | PreToolUse `Bash` | Denies `gh pr merge`, `nohup`, `pkill -f`, `--no-verify`, force-push/delete of `main`/`master`, direct `cargo test`/`just test` where `CLAUDE.local.md` routes tests elsewhere (not inside a linked git worktree, and not when `CARGO_TARGET_DIR`/`--target-dir` sends output under `$HOME` outside the checkout), `rm -r` of `/`/`~`, and commits that add private keys, known token formats or `.env`/key files. Asks before other force-pushes, `git reset --hard`, `git clean -f`, `rm -r .`/`..`, docker volume prunes, and generic `password = "..."` assignments in a commit |
 | `session_handoff.py` | SessionStart (`startup\|resume\|compact`, never `clear`), PreCompact, SessionEnd | Keeps one handoff file per session under `~/.local/state/claude-hooks/handoffs/<project>/`: a snapshot digested from the transcript (requests, files changed, commands with ✓/✗, open todos, last reply) plus the narrative `/handoff` writes. Saves it before compaction and restores it right after. A new session gets a one-line pointer to the previous goal; a cleared session gets nothing. `/handoff` and `/pickup` find the session's own file via `$CLAUDE_CODE_SESSION_ID` (`narrate`, `previous`) |
 | `suggest_compact.py` | PostToolUse `*`, SessionStart `compact` | Counts tool calls per session; at 60 and every 40 after, tells Claude to suggest `/handoff` + `/compact` at the next phase boundary. Resets on compaction |
 | `format_tracker.py` | PreToolUse `Edit\|Write\|MultiEdit` | On the first touch of a `.rs`/`.py`/`.go` file per session, records whether it was already `rustfmt`/`ruff format`/`gofmt` clean (ruff only where the project configures it). `rustfmt` gets the edition `cargo fmt` would pass: the crate's own, or under `edition.workspace = true` the workspace root's |
@@ -51,7 +51,7 @@ follows `cd` to decide whether the command runs in a linked worktree, and reads
 | `CLAUDE_VERIFY_PATTERNS` | Regex for extra commands that count as verification at Stop — set it to the machine's named-test runner |
 | `CLAUDE_HOOK_STATE_DIR` | Where stateful hooks keep per-session state (default `~/.local/state/claude-hooks`) |
 
-Check ids: `bash-guard:{merge,nohup,no-verify,force-push,direct-tests,destructive,secrets}`,
+Check ids: `bash-guard:{merge,nohup,pkill-f,no-verify,force-push,direct-tests,destructive,secrets}`,
 `edit-guard:{lint-config,secrets,prod-config,harness}`. Hook ids: `bash-guard`,
 `edit-guard`, `session-handoff`, `suggest-compact`, `stop-gate`
 (`stop-gate:{format,debug,verify}`).
