@@ -104,6 +104,8 @@ not only when stuck:
   next steps — the part a transcript digest cannot reconstruct — and
   `/pickup` loads it in the new session. A brand-new session only gets a
   one-line pointer to the previous handoff's goal.
+- `/cleanup` at the end of a session removes the worktrees it used, their build
+  output and merged-PR branches; anything dirty, unpushed or in use stays.
 - Compact at phase boundaries (plan agreed, tests green, before switching
   subtask), not mid-change. Don't start a large multi-file change with the
   window nearly full — hand off and compact first.

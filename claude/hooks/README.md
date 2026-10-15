@@ -60,6 +60,21 @@ Limits: the stop gate sees edits made with Edit/Write/MultiEdit, not files
 rewritten by shell commands, and it checks that verification *ran*, not
 that it passed — reporting failures honestly stays Claude's job.
 
+## Scripts
+
+`../scripts/session_cleanup.py` backs `/cleanup`; it is not a hook. From the
+session's transcript (`$CLAUDE_CODE_SESSION_ID`, subagents included) it finds
+the linked worktrees the session worked in or created, and removes each one
+that is clean, fully pushed, unlocked, and not in use by a process or by
+another session active in the last `CLAUDE_CLEANUP_ACTIVE_MINUTES` (30),
+together with its ignored build output. It never uses `--force`, and the repos'
+other worktrees are left alone. It deletes a removed worktree's branch, or one
+the session created, only once a merged PR or the remote default branch holds
+its tip (`-D` only on that proof, for squash merges); an open PR keeps it. It
+also deletes the session's `CLAUDE_CLEANUP_SESSION_DIRS`, by default the
+worktree test runner's `bin/tests-<session>` and `bin/benches-<session>`
+copies. `plan` previews; the module docstring has the full rules.
+
 ## Tests
 
 ```sh
