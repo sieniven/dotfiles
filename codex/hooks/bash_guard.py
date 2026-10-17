@@ -250,6 +250,25 @@ def check_git(argv, ctx, findings):
         findings.add(ASK, "destructive", "`git clean -f` deletes untracked files.")
     elif sub in ("checkout", "restore") and any(a in (".", ":/", "./") for a in args):
         findings.add(ASK, "destructive", "`git %s .` discards working-tree changes." % sub)
+    elif sub in ("checkout", "restore"):
+        check_overwrite(sub, args, repo, findings)
+
+
+def check_overwrite(sub, args, repo, findings):
+    """Ask before `git checkout [<ref>] -- <path>` or `git restore <path>` overwrites a
+    path that holds unstaged changes: an undone experiment takes uncommitted work with it."""
+    if "--" in args:
+        paths = args[args.index("--") + 1:]
+    elif sub == "restore":
+        paths = [a for a in args if not a.startswith("-")]
+    else:
+        return
+    staged_only = any(a in ("--staged", "-S") for a in args) and not any(a in ("--worktree", "-W") for a in args)
+    if not paths or staged_only:
+        return
+    if git_out(repo, "diff", "--name-only", "--", *paths).strip():
+        findings.add(ASK, "destructive",
+                     "`git %s` would overwrite unstaged changes in %s; reverse the edit instead." % (sub, ", ".join(paths[:3])))
 
 
 def check_push(args, repo, findings):

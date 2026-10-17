@@ -158,6 +158,20 @@ class BashGuardTest(unittest.TestCase):
         self.assertEqual(self.decide("docker system prune -a"), "deny")
         self.assertIsNone(self.decide("rm -f notes.txt"))
 
+    def test_overwrite_of_unstaged_changes_needs_approval(self):
+        repo = GitRepo("feat")
+        repo.write("a.rs", "one\n")
+        repo.git("add", "a.rs")
+        repo.git("commit", "-qm", "a")
+        for cmd in ["git checkout -- a.rs", "git restore a.rs", "git checkout main -- a.rs"]:
+            self.assertIsNone(self.decide(cmd, cwd=repo.dir), "clean: " + cmd)
+        repo.write("a.rs", "two\n")
+        for cmd in ["git checkout -- a.rs", "git restore a.rs", "git checkout feat -- a.rs",
+                    "git restore --worktree --staged a.rs"]:
+            self.assertEqual(self.decide(cmd, cwd=repo.dir), "deny", cmd)
+        for cmd in ["git restore --staged a.rs", "git checkout -- README.md", "git checkout feat"]:
+            self.assertIsNone(self.decide(cmd, cwd=repo.dir), cmd)
+
     def test_secret_scan_on_commit(self):
         repo = GitRepo("feat")
         repo.write("key.txt", "token = 'x'\n-----BEGIN OPENSSH PRIVATE KEY-----\n")
