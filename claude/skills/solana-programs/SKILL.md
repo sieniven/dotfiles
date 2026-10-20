@@ -53,8 +53,7 @@ account is validated before it is read:
 - Validate the program id of every program invoked (`Program<'info, Token>`
   or an explicit comparison) before `invoke` or `invoke_signed`; an arbitrary
   CPI with the program's PDA signer is a complete compromise.
-- Do not pass signer privileges implicitly to an unvalidated program; CPI
-  depth is four; return data is the callee's claim, not a fact.
+- Do not pass signer privileges implicitly to an unvalidated program; CPI depth is four (eight once SIMD-0268 activates); return data is the callee's claim, not a fact.
 - Token-2022 extensions change token behaviour the way ERC-20 quirks do:
   transfer fees, transfer hooks (untrusted code runs inside your transfer),
   permanent delegates, confidential transfers, default account state. Use
@@ -65,9 +64,11 @@ account is validated before it is read:
 - 200k compute units per instruction by default, 1.4M per transaction,
   raised via the compute-budget program; measure with LiteSVM or Mollusk
   (`compute_units_consumed`) and record the number beside the instruction.
-- Stack frame 4 KB, heap 32 KB: large structs go behind `Box` or zero-copy
-  (`#[account(zero_copy)]`, `repr(C)`, `bytemuck`), and recursion is avoided.
-- Account data up to 10 MiB, realloc up to 10 KiB per instruction, rent
+- Stack frame 4 KiB, heap 32 KiB by default (up to 256 KiB by heap-frame
+  request): large structs go behind `Box` or zero-copy (`#[account(zero_copy)]`
+  with the `zero` constraint at initialisation, `repr(C)`, `bytemuck`), and
+  recursion is avoided.
+- Account data up to 10 MiB, realloc up to 10 KiB per account per instruction, rent
   exemption from `Rent::minimum_balance(size)`; no unbounded `Vec` growth
   inside an account.
 - Versioned transactions with address lookup tables add accounts but lookup
@@ -96,11 +97,12 @@ finding.
   `CARGO_TARGET_DIR=~/.cache/claude-scratch/target-<checkout> cargo test-sbf ...`
   (one target dir per checkout root) or from a linked worktree, as the
   machine-local section of the global CLAUDE.md prescribes. `anchor build`
-  produces a `.so` and executes nothing; `anchor test` wraps a build, a local
-  validator and the test suite (confirm what it runs for the pinned Anchor
-  with `anchor test --help` before relying on it), so pass the same target dir
-  through `CARGO_TARGET_DIR` and name any refused target as unverified, never
-  passed.
+  produces a `.so` and executes nothing; `anchor test` builds, deploys to a local
+  validator (Surfpool by default, `--validator legacy` for solana-test-validator)
+  and runs the `[scripts] test` entry of `Anchor.toml`; the LiteSVM and Mollusk
+  templates make that entry `cargo test` and skip the validator, so pass the
+  same target dir through `CARGO_TARGET_DIR` and name any refused target as
+  unverified, never passed.
 
 ## Deployment and upgrades
 

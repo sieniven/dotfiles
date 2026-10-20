@@ -22,11 +22,12 @@ installed version's `--help`.
 per-iteration state; `counter` for throughput; `#[divan::bench(args = [...])]`
 for parameter sweeps; `--sample-count` on the CLI.
 
-## iai-callgrind
+## Gungraun (formerly iai-callgrind)
 
 Instruction counts, L1/LL hits, RAM accesses and estimated cycles under
 Valgrind: stable on shared CI where wall-clock is noise. Needs the matching
-`iai-callgrind-runner`; not available on every macOS or arm64 host. Run
+`gungraun-runner` (the crate was renamed from iai-callgrind in 2025 and the
+old runner is stale); not available on every macOS or arm64 host. Run
 through `cargo bench` in a worktree or with the scratch target dir.
 
 ## hyperfine (CLI and process-level)
@@ -67,8 +68,8 @@ for constant-rate, coordinated-omission-aware load.
 
 ## Primary references
 
-- criterion: https://github.com/bheisler/criterion.rs and https://bheisler.github.io/criterion.rs/book/
-- divan: https://github.com/nvzqz/divan ; iai-callgrind: https://github.com/iai-callgrind/iai-callgrind ; hyperfine: https://github.com/sharkdp/hyperfine
+- criterion (0.8, repository moved to the criterion-rs organisation): https://github.com/criterion-rs/criterion.rs with the user guide linked from its README
+- divan: https://github.com/nvzqz/divan ; Gungraun (formerly iai-callgrind): https://github.com/gungraun/gungraun ; hyperfine: https://github.com/sharkdp/hyperfine
 - HdrHistogram: https://github.com/HdrHistogram/HdrHistogram_rust and https://github.com/HdrHistogram/HdrHistogram ; wrk2: https://github.com/giltene/wrk2
 - Gil Tene, "How NOT to Measure Latency": https://www.youtube.com/watch?v=lJ8ydIuPFeU
 - Brendan Gregg, USE method and perf examples: https://www.brendangregg.com/usemethod.html , https://www.brendangregg.com/perf.html

@@ -28,7 +28,7 @@ one thing, then measure again against the same baseline.
    syscall on the hot path is a finding (logging, time reads through the vDSO
    excepted, allocation that grows the heap).
 6. **Instruction level** only when the above is clean: `perf annotate`,
-   `cargo asm` or `--emit=asm` on the function, iai-callgrind for an
+   `cargo asm` or `--emit=asm` on the function, Gungraun (formerly iai-callgrind) for an
    instruction-count baseline that is stable in CI.
 
 ## Changes that usually pay, in order of safety

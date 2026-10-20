@@ -119,8 +119,9 @@ libraries and the primary references are in
   a ban.
 - Book maintenance follows the venue's snapshot-plus-diff alignment rule
   exactly (buffer, snapshot, align the first diff, apply, resnapshot on any
-  mismatch) and verifies checksums over the venue's raw price and size
-  strings. Quiet symbols are not stale; connection health comes from the
+  mismatch) and verifies a checksum where the venue still provides one, over its raw
+  price and size strings (OKX's book checksum is deprecated and fixed at zero;
+  its sequence ids replace it). Quiet symbols are not stale; connection health comes from the
   venue heartbeat, book health from per-symbol age.
 - Server time and receive time are both recorded; ordering across venues
   uses receive time. Decimal strings parse straight into scaled integers.
