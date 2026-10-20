@@ -96,7 +96,7 @@ MySQL schemas; squawk and strong_migrations are Postgres-only.
 - Durability pair for a ledger: `innodb_flush_log_at_trx_commit=1` and
   `sync_binlog=1`, `innodb_doublewrite=ON`. Anything lower can lose committed
   rows or diverge replicas after a crash.
-- `max_connections` default 151; one thread per connection with per-thread
+- `max_connections` default 151 (confirm on the server with `SELECT @@max_connections`); one thread per connection with per-thread
   buffers (`sort_buffer_size`, `join_buffer_size`, `read_buffer_size`);
   ProxySQL in front of many clients. Guards: driver `connect_timeout`,
   `read_timeout`, `write_timeout`; server `max_execution_time` (MySQL, SELECT

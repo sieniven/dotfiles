@@ -19,10 +19,10 @@ against the pinned version, which for client libraries changes often.
   type-2 transactions need `GasFiller::legacy()` [V]. Custom estimators via
   `GasFiller::new(estimator)` [V]; blob fees through `BlobGasFiller` [V].
 - Send and confirm: `send_transaction` returns a pending-transaction builder
-  with required confirmations, timeout, `get_receipt()` and `watch()`; check
-  the receipt status yourself. Simulation through `call` with a block id and
-  state overrides. Subscriptions need a pubsub transport (WebSocket or IPC);
-  HTTP polls. Revert decoding through `sol!`-generated `SolError` types
+  with required confirmations, timeout, `get_receipt()` and `watch()` (which returns the hash, not the receipt); check
+  the receipt status yourself. Simulation through `call` with `.block()` and
+  `.overrides()`, and `simulate` for `eth_simulateV1`. Subscriptions need a
+  pubsub transport (`connect_ws(WsConnect)` or IPC, `pubsub` feature); HTTP polls. Revert decoding through `sol!`-generated `SolError` types
   (`Error(string)` selector `0x08c379a0`, `Panic(uint256)` `0x4e487b71`).
   Signers: local key, AWS KMS, GCP, Ledger, Trezor, YubiHSM crates. Fork
   tests through `alloy-node-bindings` spawning anvil. Confirm builder and
@@ -45,7 +45,7 @@ manager, `fallback` and `webSocket` transports); web3.py v7 and eth-account
   account subscriptions [V].
 - The client crates are split (`solana-pubkey`, `solana-keypair`,
   `solana-transaction`, `solana-message`, `solana-compute-budget-interface`,
-  `solana-system-interface`) with `solana-rpc-client` for RPC; the
+  `solana-system-interface`), `solana-sdk` remaining as a partial re-export facade, with `solana-rpc-client` for RPC; the
   non-blocking `RpcClient` offers `send_transaction_with_config`
   (`skip_preflight`, `preflight_commitment`, `max_retries`,
   `min_context_slot`), `simulate_transaction_with_config`,

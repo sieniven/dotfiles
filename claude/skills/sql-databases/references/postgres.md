@@ -15,8 +15,8 @@ rules, `trust` authentication (use `scram-sha-256`), upper-case identifiers.
 
 | Change | Safe form |
 |---|---|
-| Add column | nullable, no default or a constant default (instant on 11+); a volatile default rewrites |
-| `NOT NULL` on existing column | `ADD CONSTRAINT ... CHECK (c IS NOT NULL) NOT VALID`, `VALIDATE CONSTRAINT`, `SET NOT NULL` (12+ uses the check), drop the check |
+| Add column | nullable, no default or a non-volatile default (no rewrite since PG11; a stable function such as `now()` also qualifies); a volatile default rewrites |
+| `NOT NULL` on existing column | `ADD CONSTRAINT ... CHECK (c IS NOT NULL) NOT VALID`, `VALIDATE CONSTRAINT`, `SET NOT NULL` (skips the scan when a validated check proves no NULLs, PG12 onward), drop the check |
 | Foreign key or check | `ADD CONSTRAINT ... NOT VALID` then `VALIDATE CONSTRAINT` (SHARE UPDATE EXCLUSIVE only) |
 | Index | `CREATE INDEX CONCURRENTLY` outside a transaction block; unique = concurrent unique index + `ADD CONSTRAINT ... USING INDEX` |
 | Type change, rename, drop | expand and contract: new column, dual write, backfill, switch reads, drop later |

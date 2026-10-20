@@ -41,7 +41,7 @@ LEAD otherwise) applies.
 
 ```
 anchor build                      # produces target/deploy/<program>.so; executes nothing
-anchor test                       # build + local validator + TS tests; wraps cargo test, see SKILL.md routing
+anchor test                       # build + local validator + the Anchor.toml [scripts] test entry (cargo test on the LiteSVM and Mollusk templates); see SKILL.md routing
 cargo build-sbf                   # replaces cargo build-bpf
 CARGO_TARGET_DIR=~/.cache/claude-scratch/target-<checkout> cargo test-sbf
 cargo add --dev litesvm           # in-process VM [V]
@@ -64,4 +64,4 @@ static analyser whose usage is to be read from its README.
 - https://neodyme.io/blog/solana_common_pitfalls/ [V] ; https://workshop.neodyme.io [V]
 - Solana Foundation program-security course: https://github.com/solana-foundation/developer-content/tree/main/content/courses/program-security [V]
 - https://github.com/solana-foundation/solana-verifiable-build [V] ; https://github.com/LiteSVM/litesvm [V] ; https://github.com/anza-xyz/mollusk [V] ; https://github.com/Ackee-Blockchain/trident [V] ; https://github.com/sec3-product/x-ray ; https://github.com/neodyme-labs/solana-security-txt
-- Anchor (solana-foundation/anchor) constraints documentation at https://www.anchor-lang.com
+- Anchor (repository otter-sec/anchor, v1.2.1 at the time of writing): https://www.anchor-lang.com/docs/references/account-constraints

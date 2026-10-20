@@ -54,9 +54,24 @@ def main(payload):
             languages.add("python")
         if re.search(r"\.go\b|go\.mod\b|\bgo (test|build|vet)\b|\bgofmt\b", text):
             languages.add("go")
+        if re.search(r"\.sol\b|\bforge\b|\bslither\b|\banvil\b", text):
+            languages.add("solidity")
+        if re.search(r"\.(cpp|cc|cxx|hpp|hh)\b|CMakeLists\.txt|\bcmake\b|\bclang-tidy\b|\bclang-format\b", text):
+            languages.add("cpp")
+        if re.search(r"\.(js|jsx|mjs|cjs)\b|\b(npm|pnpm|yarn|node|eslint|prettier|vitest) \b", text):
+            languages.add("javascript")
+        if re.search(r"\.tsx?\b|tsconfig[^\s]*\.json|\btsc\b|\btsx\b", text):
+            languages.add("typescript")
         for edit in edits(payload):
             extension = Path(edit["tool_input"]["file_path"]).suffix
-            language = {".rs": "rust", ".py": "python", ".pyi": "python", ".go": "go"}.get(extension)
+            language = {
+                ".rs": "rust", ".py": "python", ".pyi": "python", ".go": "go", ".sol": "solidity",
+                ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".hpp": "cpp", ".hh": "cpp", ".h": "cpp",
+                ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
+                ".ts": "typescript", ".tsx": "typescript",
+            }.get(extension)
+            if Path(edit["tool_input"]["file_path"]).name == "CMakeLists.txt":
+                language = "cpp"
             if language:
                 languages.add(language)
         # Include agent identity so a parent load doesn't suppress a child load.
