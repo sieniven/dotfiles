@@ -148,6 +148,12 @@ adapters and the engine, strategy and monitor repos that trade on them today,
   the engine-middleware `tt` module, proven offline only, and what its live
   path still needs.
 
+Outside the trading domain, load the skill that names the work: `embedded-storage`,
+`sql-databases`, `evm-contracts`, `solana-programs`, `onchain-execution`,
+`venue-protocols`, `market-data-pipelines`, `prometheus-observability`,
+`systems-benchmarking`. Each has an agent of the same domain in
+`~/.claude/agents/` that preloads it.
+
 ## Harness maintenance
 
 - Run `/learn` at the end of a session that involved a correction or a
@@ -182,6 +188,9 @@ over the default:
 | `explorer`, `code-reader`, `docs-lookup`, `implementer`, `quant-trading-code-reviewer` | opus | medium |
 | `verifier`, `quant-trading-researcher`, `quant-trading-developer` | opus | high |
 | `blockchain-protocol` | opus | session default |
+| `low-level-database-implementer`, `solidity-evm-developer`, `solana-onchain-developer`, `sc-auditor`, `onchain-execution-developer`, `venue-protocol-implementer`, `hot-path-optimizer` | opus | high |
+| `sql-database-implementer`, `market-data-pipeline-developer`, `benchmark-implementer` | opus | medium |
+| `observability-implementer` | sonnet | medium |
 | `blockchain-unit-test`, `xlayer-devnet` | sonnet | session default |
 
 In every Workflow script, set `model` (and `effort`) explicitly on each
