@@ -104,7 +104,7 @@ full transcript. Do not claim a review happened when no reviewer ran.
 
 ## Rules
 
-Rules live in `~/.codex/rules/{rust,python,go}.md`. Read the matching rule
+Rules live in `~/.codex/rules/{rust,python,go,solidity,cpp,javascript,typescript}.md`. Read the matching rule
 when reading, writing, reviewing or debugging that language, including diffs.
 The PreToolUse context loader recognizes file extensions and language commands;
 language skills provide an explicit fallback. Codex does not natively implement
@@ -141,6 +141,10 @@ adapters and the engine, strategy and monitor repos that trade on them today,
 - `quant-trading-tt` — the TradingTechnologies venue: TT FIX and REST facts,
   the engine-middleware `tt` module, proven offline only, and what its live
   path still needs.
+- Outside trading, the skill that names the work, each read explicitly by a role
+  of the same domain: `embedded-storage`, `sql-databases`, `evm-contracts`,
+  `solana-programs`, `onchain-execution`, `venue-protocols`, `market-data-pipelines`,
+  `prometheus-observability`, `systems-benchmarking`.
 
 ## Harness maintenance
 

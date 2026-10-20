@@ -42,7 +42,7 @@ LogAppendTime), `max.message.bytes`, `unclean.leader.election.enable`.
 
 ## Parquet and query engines
 
-- pyarrow: `pyarrow.parquet.write_table(table, path, compression="zstd", row_group_size=..., use_dictionary=..., write_statistics=True)`;
+- pyarrow: `pyarrow.parquet.write_table(table, path, compression="zstd", row_group_size=..., use_dictionary=..., write_statistics=True)` (the default compression is snappy, so zstd is passed explicitly);
   `pyarrow.dataset.dataset(path, format="parquet", partitioning="hive")` with a filter expression.
 - polars: `write_parquet(compression="zstd", row_group_size=..., statistics=True)`;
   `pl.scan_parquet(path, hive_partitioning=True)`; `join_asof(strategy="backward", by=...)`.

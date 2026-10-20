@@ -48,7 +48,7 @@ reply timeout of about two seconds are the common defaults.
   (`-Dsbe.target.language=...`); the Rust target is generated with
   `./gradlew generateRustCodecs` and tested with `./gradlew runRustTests` or
   `cargo test` in `rust/`; the output is safe Rust with no runtime
-  dependency. Confirm the exact language property value for Rust.
+  dependency (`-Dsbe.target.language=Rust`).
 - CME MDP 3.0 as the public example: a 12-byte packet header (sequence u32,
   sending time u64), each message prefixed by a 2-byte size, then the SBE
   header; prices as mantissa with a fixed exponent; a packet-sequence gap
@@ -84,9 +84,12 @@ reply timeout of about two seconds are the common defaults.
 - OKX v5 [V partial]: keepalive is a text `ping` answered by `pong`; the
   server drops a connection with no subscription or data for 30 s, so keep
   a sub-30-second timer reset on every message. Book channels carry
-  `seqId` and `prevSeqId`; a mismatch means resubscribe; the checksum is a
-  CRC32 over the top levels interleaved as raw price and size strings
-  (confirm the exact rule on the venue page before coding).
+  `seqId` and `prevSeqId`: each message's `prevSeqId` must equal the previous
+  `seqId` (a snapshot has `prevSeqId` -1, an idle heartbeat repeats
+  `prevSeqId == seqId`, and `seqId < prevSeqId` is a legitimate reset after
+  maintenance); any other break means rebuild from a new snapshot. The
+  `checksum` field is deprecated and fixed at 0 on `books`, `books-l2-tbt` and
+  `books50-l2-tbt`; only the spread channel still carries a 25-level signed CRC32.
 - Gate spot [V]: `spot.order_book_update` at 20 ms or 100 ms; `U` and `u`
   bound each message; `full=true` replaces the book; cache messages, fetch
   the REST book with `with_id=true` for `baseID`, apply from the first
@@ -94,16 +97,23 @@ reply timeout of about two seconds are the common defaults.
   `baseID+1` is below the first cached `U`, rebuild when a later `U` exceeds
   `baseID+1`; amounts are absolute, zero removes; standard ping and pong
   frames plus an optional application-level ping.
-- Authentication: user-data listen keys renewed before expiry (Binance about
-  every 30 minutes); signed login messages on Bybit and OKX; re-authenticate
-  after every reconnect. Weight headers (`X-MBX-USED-WEIGHT-*`,
-  `X-Bapi-Limit-Status`) feed the local budget. Cancel-on-disconnect exists
-  on Bybit (`dcp`) and OKX (cancel-all-after), not on Binance spot.
+- Authentication: Binance spot user-data streams are subscribed through the
+  authenticated WebSocket API (`userDataStream.subscribe`) since February 2026,
+  the listen-key endpoints having been removed; futures still use listen keys
+  renewed before expiry; signed login messages on Bybit and OKX;
+  re-authenticate after every reconnect. Weight headers (`X-MBX-USED-WEIGHT-*`,
+  `X-Bapi-Limit-Status`) feed the local budget. Cancel-on-disconnect: Bybit's DCP is enabled per account through
+  `POST /v5/order/disconnected-cancel-all` (`timeWindow` 3 to 300 s, default 10,
+  institutional accounts) with the private socket subscribed to the `dcp`
+  topic; OKX's is `POST /api/v5/trade/cancel-all-after` (`timeOut` 0 or 10 to
+  120 s, one request per second, a heartbeat every second); Binance spot has
+  none.
 
 ## Libraries
 
-- Rust FIX: `hotfix` (session engine with stores, initiator focus, FIX 4.4;
-  check its release notes before production use), `quickfix` bindings over
+- Rust FIX: `hotfix` (session engine with stores, initiator focus; FIX 4.4
+  supported for buy-side use, 4.2 untested, 5.0 planned; 0.13 at the time of
+  writing), `quickfix` bindings over
   the C++ QuickFIX engine (full engine, C++ build dependency), `fefix` and
   its forks (codec only), `fixer`. QuickFIX (C++, Python, Java) is the
   reference engine and a good test peer but slow on a hot path; fix8 (C++)
@@ -123,4 +133,4 @@ reply timeout of about two seconds are the common defaults.
 - Databento DBN: https://github.com/databento/dbn ; https://databento.com/docs/standards-and-conventions/databento-binary-encoding
 - CME MDP 3.0: https://www.cmegroup.com/confluence/display/EPICSANDBOX/MDP+3.0
 - Venue docs: Binance spot streams https://developers.binance.com/docs/binance-spot-api-docs [V] ; Bybit v5 order book https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook [V] ; OKX v5 https://www.okx.com/docs-v5/en/ [V partial] ; Gate v4 WebSocket https://www.gate.com/docs/developers/apiv4/ws/en/ [V]
-- Libraries: https://docs.rs/crate/hotfix ; https://docs.rs/quickfix ; https://github.com/quickfix/quickfix ; https://github.com/ferrumfix/ferrumfix ; https://docs.rs/fixer ; https://github.com/rust-fuzz/cargo-fuzz
+- Libraries: https://github.com/Validus-Risk-Management/hotfix ; https://docs.rs/quickfix ; https://github.com/quickfix/quickfix ; https://github.com/ferrumfix/ferrumfix ; https://docs.rs/fixer ; https://github.com/rust-fuzz/cargo-fuzz

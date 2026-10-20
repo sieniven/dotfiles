@@ -95,7 +95,7 @@ Library facts, commands and the primary references are in
 ## Solana
 
 ### Transaction lifecycle
-- A blockhash is valid for about 150 blocks: keep the last valid block
+- A blockhash is valid for about 150 slots: keep the last valid block
   height, compare with the current height, and treat expiry as the only
   evidence that a transaction is dropped. Rebroadcast the identical signed
   bytes until then (node retries off, your own loop on), re-check once after
