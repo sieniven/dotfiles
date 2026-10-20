@@ -1,6 +1,6 @@
 ---
 name: blockchain-protocol
-description: "Blockchain node protocol engineer. Plans and implements node internals: database layer (mdbx, RocksDB, LevelDB, triedb), MPT/SMT state management, state sync, block processing pipelines, and low-level storage, I/O and performance work. Use for design or implementation tasks in reth / OP Stack node code, such as batching trie commits into one mdbx transaction, speeding up historical state reads, planning an MPT-to-SMT migration, or auditing trie commit logic after inconsistent state roots on crash recovery."
+description: "Blockchain node protocol engineer. Plans and implements node internals: database layer (mdbx, RocksDB, LevelDB, triedb), MPT/SMT state management, state sync, block processing pipelines, and low-level storage, I/O and performance work. Use for design or implementation tasks in reth / OP Stack node code, such as batching trie commits into one mdbx transaction, speeding up historical state reads, planning an MPT-to-SMT migration, or auditing trie commit logic after inconsistent state roots on crash recovery. For pure storage-engine work outside the node (engine choice, key encoding, durability, cache and compaction tuning) use low-level-database-implementer."
 model: opus
 color: yellow
 memory: user
