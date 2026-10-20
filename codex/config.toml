@@ -21,9 +21,9 @@ enabled = true
 default_subagent_model = "gpt-6.1-sol"
 default_subagent_reasoning_effort = "medium"
 
-[agents."Explore"]
+[agents."explorer"]
 description = "Read-only search agent for broad fan-out searches — when answering means sweeping many files, directories, or naming conventions and only the conclusion is needed, not the file dumps. Locates code; does not review or audit it. Specify breadth: \"medium\" for moderate exploration, \"very thorough\" for multiple locations and naming conventions."
-config_file = "agents/Explore.toml"
+config_file = "agents/explorer.toml"
 
 [agents."blockchain-protocol"]
 description = "Blockchain node protocol engineer. Plans and implements node internals: database layer (mdbx, RocksDB, LevelDB, triedb), MPT/SMT state management, state sync, block processing pipelines, and low-level storage, I/O and performance work. Use for design or implementation tasks in reth / OP Stack node code, such as batching trie commits into one mdbx transaction, speeding up historical state reads, planning an MPT-to-SMT migration, or auditing trie commit logic after inconsistent state roots on crash recovery."
@@ -34,7 +34,7 @@ description = "Designs, writes and runs unit and functional tests for blockchain
 config_file = "agents/blockchain-unit-test.toml"
 
 [agents."code-reader"]
-description = "Traces a code path end to end and explains how it actually works — entry points, data flow, state, invariants, error and cancel paths, concurrency — with path and line references. Use when the main session needs to understand a mechanism before changing it, or when the question is \"how does X work\" rather than \"where is X\". Explore locates code and verifier judges a claim; this agent explains. Read-only."
+description = "Traces a code path end to end and explains how it actually works — entry points, data flow, state, invariants, error and cancel paths, concurrency — with path and line references. Use when the main session needs to understand a mechanism before changing it, or when the question is \"how does X work\" rather than \"where is X\". The explorer locates code and verifier judges a claim; this agent explains. Read-only."
 config_file = "agents/code-reader.toml"
 
 [agents."docs-lookup"]

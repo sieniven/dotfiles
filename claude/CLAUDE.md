@@ -168,7 +168,7 @@ Ad-hoc subagents and workflow agents should not inherit the session model by
 default. Pick the cheapest tier that does the job:
 
 | Tier | Use for |
-|------|---------|
+| ------ | --------- |
 | **haiku** | Mechanical, low-judgment stages: grep/list sweeps, formatting, collecting inputs, `effort: "low"` |
 | **sonnet** | The default for Agent-tool subagents (`CLAUDE_CODE_SUBAGENT_MODEL`). Reading and summarizing code, drafting findings, applying well-specified edits, single-item reviews |
 | **opus** | Verification and judgment: adversarial verify/refute votes, judge panels, synthesis across many findings, non-trivial Rust or trading-logic reasoning |
@@ -178,8 +178,8 @@ The custom agents in `~/.claude/agents/` pin their own tier, and the pin wins
 over the default:
 
 | Agent | Model | Effort |
-|-------|-------|--------|
-| `Explore`, `code-reader`, `docs-lookup`, `implementer`, `quant-trading-code-reviewer` | opus | medium |
+| ------- | ------- | -------- |
+| `explorer`, `code-reader`, `docs-lookup`, `implementer`, `quant-trading-code-reviewer` | opus | medium |
 | `verifier`, `quant-trading-researcher`, `quant-trading-developer` | opus | high |
 | `blockchain-protocol` | opus | session default |
 | `blockchain-unit-test`, `xlayer-devnet` | sonnet | session default |

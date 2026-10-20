@@ -167,8 +167,8 @@
   ],
   "agents": [
     {
-      "name": "Explore",
-      "source": "/Users/niven.sie/dev/dotfiles/claude/agents/Explore.md",
+      "name": "explorer",
+      "source": "/Users/niven.sie/dev/dotfiles/claude/agents/explorer.md",
       "model": "gpt-6-astra",
       "effort": "medium",
       "read_only": true

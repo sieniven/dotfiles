@@ -1,6 +1,6 @@
 ---
 name: code-reader
-description: Traces a code path end to end and explains how it actually works — entry points, data flow, state, invariants, error and cancel paths, concurrency — with path and line references. Use when the main session needs to understand a mechanism before changing it, or when the question is "how does X work" rather than "where is X". Explore locates code and verifier judges a claim; this agent explains. Read-only.
+description: Traces a code path end to end and explains how it actually works — entry points, data flow, state, invariants, error and cancel paths, concurrency — with path and line references. Use when the main session needs to understand a mechanism before changing it, or when the question is "how does X work" rather than "where is X". The explorer locates code and verifier judges a claim; this agent explains. Read-only.
 model: opus
 effort: medium
 tools: Bash, Read, Glob, Grep, LSP

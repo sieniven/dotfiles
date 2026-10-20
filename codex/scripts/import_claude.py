@@ -151,7 +151,7 @@ def import_snapshot(out):
         instructions = "Read ~/.codex/local/AGENTS.local.md if it exists; its machine-local testing rules apply. Read the repository's AGENTS.md and, if absent, its CLAUDE.md read-only for project guidance.\n\n" + instructions
         model = "gpt-6.1-sol" if meta.get("model") in ("sonnet", "haiku") else "gpt-6-astra"
         effort = meta.get("effort", "high")
-        readonly = name in ("Explore", "code-reader", "docs-lookup", "verifier", "quant-trading-code-reviewer", "code-reviewer", "comment-analyzer", "pr-test-analyzer", "silent-failure-hunter", "type-design-analyzer")
+        readonly = name in ("explorer", "code-reader", "docs-lookup", "verifier", "quant-trading-code-reviewer", "code-reviewer", "comment-analyzer", "pr-test-analyzer", "silent-failure-hunter", "type-design-analyzer")
         text = f'model = {json.dumps(model)}\nmodel_reasoning_effort = {json.dumps(effort)}\n'
         if readonly:
             text += 'sandbox_mode = "read-only"\n'

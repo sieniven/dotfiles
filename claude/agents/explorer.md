@@ -1,5 +1,5 @@
 ---
-name: Explore
+name: explorer
 description: 'Read-only search agent for broad fan-out searches — when answering means sweeping many files, directories, or naming conventions and only the conclusion is needed, not the file dumps. Locates code; does not review or audit it. Specify breadth: "medium" for moderate exploration, "very thorough" for multiple locations and naming conventions.'
 model: opus
 effort: medium
