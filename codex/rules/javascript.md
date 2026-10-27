@@ -101,7 +101,7 @@ adds one.
 
 ## References
 
-- Node.js: packages and `"type"` https://nodejs.org/api/packages.html ; `node:test` https://nodejs.org/api/test.html ; the event loop https://nodejs.org/en$learn/asynchronous-work/dont-block-the-event-loop
+- Node.js: packages and `"type"` https://nodejs.org/api/packages.html ; `node:test` https://nodejs.org/api/test.html ; the event loop https://nodejs.org/en/learn/asynchronous-work/dont-block-the-event-loop
 - MDN: `AbortSignal.timeout` https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal/timeout_static ; `BigInt` https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt ; `Temporal` https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal
 - ESLint flat config: https://eslint.org/docs/latest/use/configure/configuration-files
-- React rules: https://react.dev/reference/rules ; derived state: https://react.dev$learn/you-might-not-need-an-effect
+- React rules: https://react.dev/reference/rules ; derived state: https://react.dev/learn/you-might-not-need-an-effect
