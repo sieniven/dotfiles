@@ -26,8 +26,9 @@ description this skill compresses. Outside that repo — a strategy repo
 naming the `apex` feature, a monitor over the venue, a UAT run — this skill
 is what a session has.
 
-Snapshot: `engine-middleware` main at `ac2c1187` (2026-10-14), which includes
-#459's session-hours keys. Vendor documents are the PerpetualContracts set —
+Snapshot: `engine-middleware` main at `56f96439` (2026-10-23), which includes
+#459's session-hours keys, #574's leg bounds, #577's dwell key and #581's
+stop cause. Vendor documents are the PerpetualContracts set —
 TradeAPI v1.08, MdUserAPI v1.02, Development Guide v1.4, Conformance v1.15 —
 which match the vendored SDK 1.3.1. These are a snapshot of the code and the
 documents, not a spec. Where the source disagrees, the source wins: say so,
@@ -163,9 +164,14 @@ unless the document says otherwise (the library itself defaults to 10 s when
 nothing is set; the venue's floor is 4 s and it recommends 10 to 30); the
 library warns at half the timeout (`heartbeat_warnings`, moves nothing) and
 drops the link at the timeout, and that drop is the `Down`, so a dead link
-reads `Up` for one heartbeat timeout. Drop reasons: `0x1001` and `0x1002`
-read and write failure, `0x2001` and `0x2002` heartbeat receive and send
-timeout, `0x2003` error message.
+reads `Up` for one heartbeat timeout. A leg with no login and no answer from
+the venue for 30 s is one `warn` naming its phase, and at 300 s `Fatal`
+(`LEG_SLOW_AFTER`, `LEG_GONE_AFTER`): the module cannot make the library
+dial again, so a process restart brings it back. A refusal restarts that
+clock, a drop does not. Each link-up and each login sent is a line, and
+`link_ups_total` counts link-ups per leg. Drop reasons: `0x1001` and
+`0x1002` read and write failure, `0x2001` and `0x2002` heartbeat receive and
+send timeout, `0x2003` error message.
 
 **Recovery.** The ladder asks instruments first — one query per document
 instrument, the tick compared and the multiplier where the document states
@@ -174,10 +180,13 @@ fixed — then orders, trades and positions in that order, orders before trades
 because order rows carry the cumulative. Each question waits 10 s and is asked
 three times under fresh id runs; a question given up on is `Fatal`. Ordinary
 recovery is a login retry of at most 15 s, a 1 s quiet period and four answers
-at the venue's pace; the worst case, 120 s, runs past the engine's 90 s dwell,
-after which the node stops and an operator's `Start` restarts the ladder. The
-private stream is subscribed in resume mode, so every login replays order and
-trade returns from the flow directory's position. The orders question is
+at the venue's pace; the worst case, 120 s (`RECOVERY_WORST_CASE`), runs past
+the engine's default 90 s dwell, after which the node stops and an operator's
+`Start` restarts the ladder. The document's `engine.stop_after_down_secs` at
+120 or more lets the worst case finish, `0` never stops, and a value under
+120 is warned about at boot. The private stream is subscribed in resume mode,
+so every login replays order and trade returns from the flow directory's
+position. The orders question is
 always asked whole and closes what the answer omits: the venue filters it on
 `InsertTime` (answered 2026-10-12), so a since-window would miss an older
 order's end.
@@ -228,13 +237,15 @@ Widths, floors and counts are checked by the venue's own constructors with
 the venue's message; a password longer than its field is truncated silently.
 Coordinates and secrets are `!env` or `!file` references, never values.
 
-**Observability.** Series: `session_state` and `reconnects_total` per leg
-(`main` is order entry, `market` the feed), `venue_polls_total{outcome}`,
-`account_funds{kind}`, `wire_ids_foreign_total`, `md_skipped_total`,
-`md_books_unheard`. `SourceCounters` — logins, drops, deferrals, refusals,
-unhandled callbacks, rollbacks, heartbeat warnings, bindings refused and the
-rest — reach only a rig. `RUST_LOG=pgd::connectivity::apex=trace` prints
-every depth snapshot with both price pairs.
+**Observability.** Series: `session_state`, `reconnects_total` and
+`link_ups_total` per leg (`order` is order entry, `market` the feed),
+`venue_polls_total{outcome}`, `account_funds{kind}`, `wire_ids_foreign_total`,
+`md_skipped_total`, `md_books_unheard`; a dwell or `Fatal` stop names the
+source in `node.status`'s `last_stop`. `SourceCounters` — logins, drops,
+link-ups, logins sent, legs given up on, deferrals, refusals, unhandled
+callbacks, rollbacks, heartbeat warnings, bindings refused and the rest —
+reach only a rig. `RUST_LOG=pgd::connectivity::apex=trace` prints every depth
+snapshot with both price pairs.
 
 ## Running against the venue
 
