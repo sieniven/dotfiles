@@ -11,8 +11,10 @@ paths:
 
 Loaded automatically whenever a JavaScript file or `package.json` is read or
 edited; `~/.claude/rules/typescript.md` builds on this file for `.ts` and
-`.tsx`. These are deviations from textbook defaults and the rules a trading
-desk's frontends and Node services need. In this workspace the frontends are
+`.tsx`. Google's TypeScript style guide is the baseline for both files (its
+JavaScript guide is frozen and defers to it); this file holds what it
+leaves open, the places it deviates, and the rules a trading desk's
+frontends and Node services need. In this workspace the frontends are
 Vite with React and Next.js, all ESM, and the Node code is scripts and
 services; none of them ships a lint config yet, so the first change to a repo
 adds one.
@@ -26,6 +28,13 @@ adds one.
   `npm ci` or `pnpm install --frozen-lockfile` and runs `audit`; `engines`
   pinned; a published package declares `exports`; unused dependencies are
   removed in the change that orphans them.
+- Named exports everywhere a framework does not force a default (Next.js
+  pages and layouts, config files; `import-x/no-default-export` with
+  per-glob overrides); no `export let` (a re-exported binding does not
+  update: expose a getter); no class of statics as a namespace, the module
+  is the namespace. `import * as x` for many symbols from one large module,
+  named imports otherwise; relative paths inside a package, the alias only
+  across packages.
 - Secrets never enter the repo or the bundle: `.env` files are ignored,
   `--env-file` or dotenv only in development, keys and tokens redacted at
   the logger. Only `VITE_`- or `NEXT_PUBLIC_`-prefixed variables reach the
@@ -40,7 +49,35 @@ adds one.
   older forms; inputs are not mutated.
 - Rest parameters, never `arguments`; arrow functions for callbacks,
   `function` or methods where `this` matters; `for...of` or array methods,
-  never `for...in` over an array.
+  never `for...in` over an array, and `for...of` over
+  `Object.keys`/`values`/`entries` for an object (`guard-for-in`).
+- A dictionary keyed at runtime is a `Map` or `Set`, not an object
+  (prototype keys, string-only keys); an index signature names its key
+  (`{ [orderId: string]: Order }`). Spread arrays into arrays and objects
+  into objects only (`[...(cond ? xs : [])]`, never `...(cond && xs)`);
+  `[]` and `{}` literals, never `Array(n)` or `new Object()`.
+- A named function goes to `map`/`filter`/`forEach` wrapped in an arrow
+  (`xs.map((x) => f(x))`), so the index and array never leak into an
+  optional parameter (`["11", "5"].map(parseInt)` gives `[11, NaN]`;
+  `unicorn/no-array-callback-reference`). An arrow whose result is
+  discarded has a block body or a `void` prefix
+  (`no-confusing-void-expression`).
+- More than two optional parameters become one options object, destructured
+  with defaults in the parameter (`{ retries = 3, signal }: Opts = {}`); a
+  default never has a side effect. A bare `true`/`false` argument gets a
+  `/* name= */` comment or the call becomes an options object.
+- `addEventListener(x, this.f.bind(this))` can never be removed: a listener
+  that must be uninstalled is an arrow-function property, every other
+  callback an inline arrow. A private static method is a module-level
+  function; no `this` in a static method; never patch a builtin prototype
+  or the global object (`no-extend-native`).
+- Naming: `UpperCamelCase` for types, classes and components,
+  `lowerCamelCase` for the rest, `CONSTANT_CASE` only for module-level
+  constants; acronyms as words (`orderId`, `parseHttpUrl`); no `_` prefix
+  for private and no `I` prefix on an interface; a single-letter name only
+  inside ten lines (`@typescript-eslint/naming-convention`). JSDoc on every
+  export says what the name and signature do not, with no types in
+  `@param`.
 
 ## Async
 
@@ -62,9 +99,10 @@ adds one.
 ## Errors
 
 - Throw `Error` subclasses with `{ cause }`, never strings or plain objects;
-  catch narrowly and rethrow what cannot be handled; no empty `catch`;
-  `finally` for cleanup; one top-level boundary per entry point (the process
-  in Node, an error boundary in the UI).
+  catch narrowly and rethrow what cannot be handled, with the `try` wrapping
+  only the call that throws; no empty `catch` without a comment saying why
+  nothing is done; `finally` for cleanup; one top-level boundary per entry
+  point (the process in Node, an error boundary in the UI).
 
 ## Numbers, money and time
 
@@ -73,6 +111,10 @@ adds one.
   minor units for arithmetic. `Number.isSafeInteger` before trusting an
   integer; `JSON.stringify` throws on `BigInt` (explicit replacer) and
   `JSON.parse` silently loses precision on large ids (keep them strings).
+- Every other number is parsed with `Number(s)` and rejected on
+  `!Number.isFinite(n)` (`""` parses as `0`, `"1e400"` as `Infinity`);
+  never unary `+`, `parseInt` or `parseFloat`, which accept `"12 dwarves"`;
+  `parseInt` only with a radix for a non-decimal string.
 - UTC ISO-8601 strings on the wire; `new Date("YYYY-MM-DD HH:mm")` parses
   as local time; a date library used in UTC until `Temporal` ships in every
   target runtime.
@@ -104,4 +146,5 @@ adds one.
 - Node.js: packages and `"type"` https://nodejs.org/api/packages.html ; `node:test` https://nodejs.org/api/test.html ; the event loop https://nodejs.org/en/learn/asynchronous-work/dont-block-the-event-loop
 - MDN: `AbortSignal.timeout` https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal/timeout_static ; `BigInt` https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt ; `Temporal` https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal
 - ESLint flat config: https://eslint.org/docs/latest/use/configure/configuration-files
+- Google TypeScript style guide (covers JavaScript too): https://google.github.io/styleguide/tsguide.html
 - React rules: https://react.dev/reference/rules ; derived state: https://react.dev/learn/you-might-not-need-an-effect
