@@ -116,28 +116,8 @@ plus `quant-trading-research` for alpha or signal research,
 backtesting or promoting a strategy. Add the venue skill when the work names that
 venue: `quant-trading-crypto-struct` for the CryptoStruct adapters and the engine,
 strategy and monitor repos that trade on them today, `quant-trading-apex` or
-`quant-trading-tt` for those venues:
+`quant-trading-tt` for those venues.
 
-- `quant-trading` — quant trading domain expertise: market making, engine design,
-  execution, market data, risk.
-- `quant-trading-research` — QR practice: hypothesis-first research loop, tick/L2
-  data hygiene, microstructure signals, statistical validation, multiple-testing
-  discipline, cost-first reporting.
-- `quant-trading-backtesting` — simulator practice: replay design and determinism,
-  L2/L3 data and queue position, matching semantics, latency and jitter with the
-  cancel-fill race, calibrating against live fills, benchmarking and reading a
-  backtest; the platform's backtester facts.
-- `quant-trading-validation` — QD practice: fidelity ladder and optimism audit,
-  parity against live, walk-forward and parameter robustness, TCA and markouts,
-  promotion gates and kill criteria.
-- `quant-trading-crypto-struct` — the CryptoStruct adapters and engine-middleware's
-  venue module for them, and the legacy Python stack and Rust bot that trade on them
-  today.
-- `quant-trading-apex` — the APEX venue: the vendor SDK and documents, the engine-
-  middleware `apex` module, UAT tiers and live-safety rules, open questions.
-- `quant-trading-tt` — the TradingTechnologies venue: TT FIX and REST facts, the
-  engine-middleware `tt` module, proven offline only, and what its live path still
-  needs.
 - Outside trading, the skill that names the work, each preloaded by an agent of the
   same domain: `embedded-storage`, `sql-databases`, `evm-contracts`,
   `solana-programs`, `onchain-execution`, `venue-protocols`,
@@ -152,10 +132,6 @@ strategy and monitor repos that trade on them today, `quant-trading-apex` or
   `skill-comply` skill instead of assuming it is followed; obligations that keep
   failing become hooks. `quant-trading-code-reviewer` has a seeded fixture set there
   for regression runs.
-- The dotfiles CI runs `claude/scripts/lint_harness.py` and the hook tests; run both
-  locally before pushing harness changes.
-- How `~/.claude` is wired to this repo (what is linked, what is copied, the
-  `CLAUDE.local.md` requirement) is in `claude/hooks/README.md` under Install.
 
 ## Model tiering
 
@@ -169,16 +145,8 @@ default. Pick the cheapest tier that does the job:
 | **opus** | Verification and judgment: adversarial verify/refute votes, judge panels, synthesis across many findings, non-trivial Rust or trading-logic reasoning |
 | **fable** | Only when explicitly asked, or for the single final synthesis of a large audit where correctness dominates cost |
 
-The custom agents in `~/.claude/agents/` pin their own tier, and the pin wins over
-the default:
-
-| Agent | Model | Effort |
-| ------- | ------- | -------- |
-| `explorer`, `code-reader`, `docs-lookup`, `implementer`, `quant-trading-code-reviewer`, `sql-database-implementer`, `market-data-pipeline-developer`, `benchmark-implementer` | opus | medium |
-| `verifier`, `quant-trading-researcher`, `quant-trading-developer`, `low-level-database-implementer`, `solidity-evm-developer`, `solana-onchain-developer`, `sc-auditor`, `onchain-execution-developer`, `venue-protocol-implementer`, `hot-path-optimizer` | opus | high |
-| `blockchain-protocol` | opus | session default |
-| `observability-implementer` | sonnet | medium |
-| `blockchain-unit-test`, `xlayer-devnet` | sonnet | session default |
+The custom agents in `~/.claude/agents/` pin their own tier in their `model:` and
+`effort:` frontmatter, and the pin wins over the default.
 
 In every Workflow script, set `model` (and `effort`) explicitly on each `agent()`
 call — never leave it to inherit. Match the tier to the stage, not to the task's
