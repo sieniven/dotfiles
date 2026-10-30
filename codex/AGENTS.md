@@ -64,6 +64,10 @@ named `<group>-<name>`:
   result is for, what done looks like, and what is already known. Read each
   return critically; if it misses what you need, send a follow-up to the same
   agent (up to ~3 rounds) before accepting it or re-spawning.
+- **A subagent's shell keeps no cwd between calls.** A brief for work in a
+  worktree says: set `workdir` to the absolute worktree path on every
+  command, no exceptions; a `cd` in a call of its own does not carry, so the
+  agent's next command lands in the main checkout.
 - **Delegation completion contract.** A subagent's final message is its
   deliverable: never end a turn on "waiting for background agents". If you
   delegate, you collect — wait for every child, integrate the results, then

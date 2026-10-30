@@ -63,10 +63,19 @@ libraries and the primary references are in
 - Each order carries a client order id; each cancel or replace carries a new
   id plus the original. The whole chain maps to one internal order until a
   terminal execution report arrives.
+- An id that must differ across owners (nodes, sources on one adapter) gives
+  each owner a field of its own inside the id; a hash fold of several names
+  cannot back a pin that has to hold for every input, and a field the venue
+  echoes is a wire contract, pinned for the life of any resting order.
 - Execution reports are the truth: cumulative and leaves quantities over
   summed last quantities, deduplicated by execution id. A cancel reject
   ("too late", "unknown order") is not a terminal state; an order is live
   until its terminal report, and never marked dead on send.
+- Dropping the handling of an order state the venue is not known to send:
+  parse it as a working restatement that acknowledges nothing and moves no
+  amend or version counter, never as an alias of a stronger state. Aliased to
+  the confirmed state, a pending-amend row acknowledges an amend the venue has
+  not applied, and the refusal that follows closes the order.
 - Unsolicited cancels and expirations arrive without a request and are
   handled by the state machine; a mass-cancel report says what the venue
   accepted, individual reports still follow.
