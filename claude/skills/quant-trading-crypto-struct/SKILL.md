@@ -5,11 +5,12 @@ description: >-
   or Unix socket, one feed per exchange) and Trading Adapter (JSON frames, one
   per account, holding the exchange keys) that front Binance, Bybit, OKX,
   Gate.io and the perp DEXes, and how engine-middleware's `cryptostruct` venue
-  module on PR #285 integrates them: document block, the one market-data
-  thread and its band, per-account login answers and brackets, strangers,
-  batched cancels, per-account send windows, cancel on disconnect as a
-  backstop, the venue double, issue #386. Also the legacy stack trading on the
-  same adapters today (the Python tradingenginecs engine and its StrategyBase
+  module integrates them: one source per exchange (`CsOkx`, `CsBitget`, …),
+  the `sources` document block, one market-data agent per source and its
+  band, per-account login answers and brackets, strangers, batched cancels,
+  per-account send windows, the position poll and metadata check, cancel on
+  disconnect as a backstop, the venue sim, issue #386. Also the legacy stack
+  trading on the same adapters today (the Python tradingenginecs engine and its StrategyBase
   callbacks, engine-backtesting parity, the Rust mm/hedger bot, money
   conventions). Use when working in the engine/, strategy/, monitor/ or
   system/ repos under ~/dev, or on anything naming the cryptostruct feature
@@ -21,10 +22,9 @@ description: >-
 CryptoStruct is not an exchange: it is the pair of internal adapters every
 crypto venue is reached through. Two consumers speak to them. The Rust
 middleware's venue module, `crates/connectivity/src/cryptostruct/` in
-`engine-middleware`, arrives on PR #285 (`feat/cs-connectivity`, head
-`9f024893`); on main at `1ad03f45` the wiring key is refused at boot until it
-lands, while `docs/venues/CRYPTOSTRUCT.md` there already describes the
-module. The legacy Python `tradingenginecs` engine and the Rust mm/hedger
+`engine-middleware`, is on main since #285 (2026-10-20) and became one
+source per exchange with the stack #636–#640 (2026-10-30); `docs/venues/
+CRYPTOSTRUCT.md` is the one description of it. The legacy Python `tradingenginecs` engine and the Rust mm/hedger
 bot trade on the same adapters today; their facts are in
 [references/legacy-python-stack.md](references/legacy-python-stack.md),
 with a short summary below. Domain principles live in `quant-trading`.
@@ -80,26 +80,46 @@ question only a live deployment can answer stays a question here.
 
 ## Middleware integration, as built
 
-**Shape.** Feature `cryptostruct`, the double behind `cryptostruct-double`,
-both forwarded by `pgd-node`; `ConnectivitySource::CryptoStruct`; document
-block `node.connectivity.cryptostruct`; trace target
-`pgd::connectivity::cryptostruct`. The builder declares
-`MARKET_DATA | ORDER_EXECUTION`; `build` opens nothing and the first slice
-dials. Either leg may be omitted but not both; `instruments` is required.
+**Shape.** Feature `cryptostruct`, the sim behind `cryptostruct-sim`, both
+forwarded by `pgd-node`; trace target `pgd::connectivity::cryptostruct`. **One
+source per exchange**: a `ConnectivitySource` variant each (`CsBinanceUsdt`,
+`CsBitget`, `CsBybit`, `CsGateioFuture`, `CsGateioSpot`, `CsHashkeyGlobal`,
+`CsHashkeyHk`, `CsHashkeyMena`, `CsHyperliquid`, `CsKrakenSpot`,
+`CsKucoinSpot`, `CsMexc`, `CsOkx`, discriminants 4–16 after `Mock`, `Apex`,
+`TradingTechnologies`), each wired from one entry of
+`node.connectivity.cryptostruct.sources.<Cs*>` with its own liveness word,
+rings, ledger, feed, Trading Adapter, duty thread and `Up`; an exchange the
+build does not carry is refused by name at load. `cryptostruct::Venue` maps
+the variant to the `exchange:` spelling an engine instrument writes (`okx`,
+`hashkey_exchange`, `gateio_spot`, …), and an instrument whose `exchange`
+is not its source's spelling is refused. The builder declares `MARKET_DATA`
+where the entry has `market_data` and `ORDER_EXECUTION` where it has
+`order_entry`; `build` opens nothing and the first slice dials. Either leg
+may be omitted but not both; `instruments` is required.
 
-**Threads.** The duty thread owns every order-entry connection, the order
-ledger and the cell word, and is the source lane's only producer; a refused
-push there is a real fault that ends the slice `Fatal`. One market-data
-thread serves every feed and is the ring's only producer; where
-`market_data.core` is named it is pinned there and busy-spins (required
-under a dedicated profile, refused under the shared one), otherwise it idles
-under a 50 µs backoff. Its death is `Fatal` until a process restart. Dials
-run on unpinned connector threads, one per account and feed. Sockets are
+**Threads, per source.** The duty thread owns the order-entry connections,
+the ledger and the cell word, and is the source lane's only producer; a
+refused push there is a real fault that ends the slice `Fatal`. The
+market-data agent (`MdAgent`, a `pgd_runtime::Agent` driven by the same
+`drive` loop as the duty) owns the one feed and the ring's sender and runs
+one bounded `do_work`: the duty's snapshot asks taken, the link polled, at
+most one read, the decode to 64 messages or 1 024 records, at most eight
+subscribes, the unheard books aged, the word stored on its edge, the
+heartbeat, at most one write. Where `market_data.core` is named it is pinned
+there and busy-spins (required under a dedicated profile, refused under the
+shared one, and a core two entries name is refused), otherwise it idles
+under a 50 µs backoff; a `GapMarker` in its guard gaps every book if it ends
+unasked, and its death is `Fatal` until a process restart. One HTTP side
+thread (`<instance>-<source>-http`) serves the position poll and the
+metadata check through one ring of tagged asks (`Poll`, `Metadata`) and one
+of tagged answers, one check request a turn with at most one waiting poll
+between two of them. Dials run on unpinned connector threads. Sockets are
 read directly and non-blocking, at most 32 account reads a slice; the
 stopping slice alone waits, retrying cancel writes for up to 250 ms so the
 drain's cancels leave before the sockets close, then writes `Down`.
 
-**Market data.** A feed's turn ends at 64 messages or 1 024 records. The
+**Market data.** One feed per source; an iteration's decode ends at 64
+messages or 1 024 records. The
 subscription cannot limit depth, so a snapshot is narrowed to a **band**: the
 first 510 levels of a side that arrives best first, otherwise the levels
 within `min(roi_ticks, 510)` ticks of each best; a delta outside it is
@@ -131,19 +151,20 @@ cancel and amend by what the socket took: a frame that never left is
 frame never left is `SessionDown`, and one written or cut keeps its binding
 for the next login's answer. **Positions** are
 `long − short` per pair, folded per account from pushes; isolated and hedge
-mode are unsupported and spot is refused for execution. The `Up` slice
-waits `position_settle_ms` (1 000) past each figure's receipt because the
-push precedes the fill it holds.
+mode are unsupported and spot is refused for execution. Positions and
+balances carry venue stamps and are stated last before `Up`, because the
+push precedes the fill it holds. A `PENDING_AMEND` row restates the order as
+working and answers nothing.
 
 **Egress.** Cancels on one instrument and account batch up to
-`cancel_batch_max` (10); places and amends batch the same way only under
-`batch_places`. `Gtc` → `GOOD_TILL_CANCEL`, `Ioc` → `IMMEDIATE_OR_CANCEL`,
+`cancel_batch_max` (10); a place or an amend is one entry per frame. `Gtc` → `GOOD_TILL_CANCEL`, `Ioc` → `IMMEDIATE_OR_CANCEL`,
 `Fok` → `FILL_OR_KILL`, `PostOnly` → GTC with `postOnly: true`; `DAY` is never
 sent. `postOnly`, `reduceOnly`, `closeOnly` and `wallet_type` are written
 explicitly on every place; a place goes out only as a limit order with a
 time in force, wallet and (for an amend) amend capability the login listed,
-and a login with no `capabilities` lists nothing. There is no instrument
-status gate. An exchange-side timeout refuses a cancel `InDoubt` and an
+and a login with no `capabilities` lists nothing. The backend's instrument
+state, read on the metadata check, is the one status word (`Status` shut or
+open once per recovery). An exchange-side timeout refuses a cancel `InDoubt` and an
 amend `Unknown` and keeps a place's binding, all **without** the `Down` the
 contract pairs with `InDoubt`, because a `Down` here re-dials every account
 and may fire the disconnect cancel; a kept place unheard past the bracket
@@ -154,9 +175,11 @@ before its order confirmed is answered `UnknownOrder` and sent once more on
 the order's next word; `ACCESS_DENIED` reads as `UnknownOrder`.
 
 **Identity.** The engine's client id never reaches the venue: an own order's
-uuid is spelled from the wire id and the instance's discriminator, with the
-amend counter in `clientOrderId`, so two nodes on one account are safe only
-with different instance names; `ORDER_ID_DUPLICATE` counts `id_collisions`, as
+uuid is spelled from the wire id, the instance's 16-bit discriminator and the
+source's discriminant (8 bits), with the amend counter (20 bits) in
+`clientOrderId`, so two sources of one node never spell one id and two nodes
+on one account are safe only with different instance names; the discriminant
+is therefore on the venue wire and a new exchange appends, nothing renumbers; `ORDER_ID_DUPLICATE` counts `id_collisions`, as
 do two live orders whose exchange ids fold alike (`007`/`7`), dropped and never
 merged. The run second is taken on the first slice whose clock reads;
 a run second past 30 bits is `Fatal`. A venue id is the exchange's id where
@@ -174,11 +197,14 @@ heartbeat and a hung live peer is never found. Per account: `Down`,
 `Dialing`, `Open`, `Stuck`; per feed `Down`, `Connected`, `LoggingIn`,
 `Subscribing`, `Up`. `Up` is written as the last step of `do_work`, once
 every account's answer is whole and `Ready` with status OK, every feed up,
-the market-data thread alive and every executed pair stated. `Fatal` on a
+the market-data agent alive, the metadata check passed and every executed
+pair and wallet stated. `Fatal` on a
 refused login or status, a question given up after two asks, a full source
 lane, an unreadable position, an order-entry message larger than
-`recv_buffer_bytes`, or the market-data thread ending; a `Start` clears the
-login verdicts by re-dialling. On `Fatal` the source closes order entry to
+`recv_buffer_bytes`, a metadata disagreement, a feed login lost twice or a
+depth subscribe refused eight times, or the market-data agent ending; a
+`Start` clears the login and feed-login verdicts by re-dialling and asks the
+backend afresh. On `Fatal` the source closes order entry to
 fire the adapter's disconnect cancel — the backstop, never the mechanism,
 covering no adopted stranger; whether it fires, and on what scope, is
 unconfirmed.
@@ -193,58 +219,64 @@ is taken whole; a connection gone before its answer doubles it and spends an
 ask (`drops_unanswered`). Down to up is about 14 s; the worst case for the
 login question, about 84 s at the defaults (1 s and 2 s backoffs, then the
 settle hold), is held inside the engine's 90 s dwell by a build-time check.
-There is **no position poll** and no sync
-point: pushes on change are the only anchor, so nothing bounds the age of
-the last statement while `Up`. An order an answer omits while it still
+The position poll (`position_poll_secs`, off unless the document sets it)
+through the adapter's HTTP API is the one anchor while `Up`; `poll_misses_down`
+misses take the source `Down` without a relogin. The metadata check runs
+before each `Up` where `metadata_url` is set (tick, lot, currency, asset ids;
+a disagreement is `Fatal`, a silent backend `metadata.unverified`); its
+deadline is outside the recovery worst case. An order an answer omits while it still
 rests is closed `NotAtVenue` and keeps resting with no record anyone can
 cancel, an engine-side re-open tracked in issue #386.
 
 **Rate limits.** Each account has its own one-second window of
 `sends_per_second` (100): a place or an amend stops at 75, a cancel may
 spend all 100, and a test pins that no burst of places or amends can spend
-the cancels' share. `rateLimitLoad` pushes are indicative gates: a place is
-refused at a place or cancel load of 0.75, an amend at 0.875, never a
-cancel; the keys differ by exchange. A `retryTimeNs` holds that account's
+the cancels' share. A `rateLimitLoad` push is counted unknown and read no
+further (no exchange lists the capability). A `retryTimeNs` holds that account's
 places and amends until it passes, at most 60 s; one on a cancel is ignored
 and counted. A cancel the window refuses is restored by the engine and not
 sent again, so a stop drain past the window leaves the excess resting until
 `drain_timeout` (#386).
 
-**Instruments and accounts.** Every instrument on the venue has exactly one
-entry with the venue `id` (unique across exchanges), `exchange`, `symbol`,
-`kind` (`perpetual` or `future` where executed; `spot` refused),
-`wallet_type` (`account` by default), `topics`, `tob_coalescing`; its
-`tick` and `lot` are taken as the venue's, since the login states no
-metadata and nothing fetches it (#386). One quantity unit per instrument:
-orders, fills and positions are all read in the configured `lot`.
-`order_entry.accounts` names the venue's numeric id per engine account, in
-order, at most 32; accounts × executed instruments stays within half the
-source lane (2 048).
+**Instruments and accounts.** Every instrument on a `Cs*` source has exactly
+one entry under its source's `instruments`, matched by `symbol`: the venue
+`id` (unique across exchanges), `kind` (`spot`, `perpetual` or `future`),
+`wallet_type` (`account` by default), `topics`, `tob_coalescing`; its `tick`
+and `lot` are the venue's, checked against the backend where `metadata_url`
+is set. One quantity unit per instrument: orders, fills and positions are
+all read in the configured `lot`. Each entry's `order_entry.accounts` names
+the engine `idx`, `name` and the venue's numeric `id` per account, at most 32;
+an account belongs to one source (an `idx`, a name or a venue id two entries
+declare is refused by both locations); accounts × executed instruments stays
+within half the source lane (2 048) per source.
 
-**Document block** (`node.connectivity.cryptostruct`):
+**Document block** (`node.connectivity.cryptostruct`): a prelude every
+source shares, then `sources`, one entry per `Cs*` variant the instruments
+name (an entry nothing names, or a named variant with no entry, is refused).
 
 | Key | Default | Note |
 | --- | --- | --- |
-| `application` | `pgd-connectivity` | the market-data login's application name |
+| `application` | `pgd-connectivity` | every feed login's application name |
+| `organization` | required with any `market_data` | every feed login's organization |
 | `dial_timeout_secs` | 5 | connect, handshake and `welcome`; not the resolver |
-| `market_data.organization` | required | the login's organization |
-| `market_data.feeds` | required | map of exchange key to `{ url }`, at most 15, one per fed exchange and none spare |
-| `market_data.heartbeat_secs` | 5 | `ws://` only |
-| `market_data.core` | absent | the pinned, busy-spinning market-data core |
-| `market_data.recv_buffer_bytes` | 4 MiB | at least 2 424 870 |
-| `order_entry.url` | required | the Trading Adapter |
-| `order_entry.accounts` | required | numeric ids per engine account, at most 32 |
-| `order_entry.heartbeat_secs` | 5 | per account connection |
-| `order_entry.login_timeout_secs` | 30 | above the adapter's 28 s; capped at 32 by the dwell check |
-| `order_entry.sends_per_second` | 100 | 0 unmetered |
-| `order_entry.batch_places` | `false` | batch places and amends like cancels |
-| `order_entry.cancel_batch_max` | 10 | 1 to 16 |
-| `order_entry.recv_buffer_bytes` | 4 MiB | the largest answer an account can take |
-| `order_entry.pending_out_bytes` | 64 KiB | unsent bytes per account; undersized costs latency |
-| `order_entry.stall_ms` | 250 | unsent bytes older than this tear the connection down |
-| `order_entry.tentative_reject_secs` | 3 | the adapter's `tentative_reject_timeout_s` |
-| `order_entry.position_settle_ms` | 1000 | not below the largest `drift_skew_ms` |
-| `instruments[]` | required | `exchange`, `symbol`, `id`, `kind`, `wallet_type`, `topics`, `tob_coalescing` |
+| `metadata_url` | absent | the backend; each source checks its own instruments |
+| `assets` | `{}` | engine asset → venue `underlyingId` |
+| `sources.<Cs*>.market_data.url` | required for a fed source | the exchange's market-data adapter |
+| `sources.<Cs*>.market_data.heartbeat_secs` | 5 | `ws://` only |
+| `sources.<Cs*>.market_data.core` | absent | the pinned, busy-spinning market-data core; one per source |
+| `sources.<Cs*>.market_data.recv_buffer_bytes` | 4 MiB | at least 2 424 870 |
+| `sources.<Cs*>.order_entry.url` | required for a trading source | the exchange's Trading Adapter |
+| `sources.<Cs*>.order_entry.accounts[]` | required | `{ idx, name, id, wallets }`, at most 32 |
+| `sources.<Cs*>.order_entry.heartbeat_secs` | 5 | per account connection |
+| `sources.<Cs*>.order_entry.login_timeout_secs` | 30 | above the adapter's 28 s; capped by the dwell check |
+| `sources.<Cs*>.order_entry.sends_per_second` | 100 | 0 unmetered |
+| `sources.<Cs*>.order_entry.cancel_batch_max` | 10 | 1 to 16 |
+| `sources.<Cs*>.order_entry.recv_buffer_bytes` | 4 MiB | the largest answer an account can take |
+| `sources.<Cs*>.order_entry.pending_out_bytes` | 64 KiB | unsent bytes per account; undersized costs latency |
+| `sources.<Cs*>.order_entry.stall_ms` | 250 | unsent bytes older than this tear the connection down |
+| `sources.<Cs*>.order_entry.tentative_reject_secs` | 3 | the adapter's `tentative_reject_timeout_s` |
+| `sources.<Cs*>.order_entry.api_url`, `position_poll_secs`, `poll_misses_down` | absent, 0, 3 | the position poll over the adapter's HTTP API |
+| `sources.<Cs*>.instruments[]` | required | `symbol`, `id`, `kind`, `wallet_type`, `topics`, `tob_coalescing`; no `exchange`, the variant is the exchange |
 
 Floors, ranges and counts are checked by the venue's own constructors;
 coordinates are `!env` references resolved while the source is wired, so an
@@ -252,8 +284,11 @@ unset one is refused by name before anything is built.
 
 **Observability.** Series: `venue_requests_total{kind, outcome}` by `place`,
 `cancel`, `amend` and `sent`, `refused`, `not_sent`, `ambiguous`;
-`session_state` and `reconnects_total` per leg (`order`, `market`); the six
-`wire_ids_*`; `md_skipped_total`; `md_books_unheard`. `SourceCounters` such as
+`session_state` and `reconnects_total` per leg (`order`, `market`), every
+series labelled `source=<Cs*>` and `ring_depth{lane}` as `<cs*>.md` /
+`<cs*>.account` (lowercased); the six `wire_ids_*`; `md_skipped_total`;
+`md_books_unheard`; `node.status` and the recorder's health list one row per
+source. `SourceCounters` such as
 `own_ids_reused`, `strangers_full`, `id_collisions`, `post_only_mismatch`,
 `place_timeouts_kept`, `rows_out_of_order` and `up_held_past_bound` reach
 only a rig. `RUST_LOG=info,pgd::connectivity::cryptostruct=debug` shows the
@@ -270,19 +305,22 @@ writes and the warnings a first run meets.
 | Node | `just cryptostruct-example` | `.env`, both adapters | yes; trades once `dry_run` is off |
 
 No vendor library, container or credential is needed: the module speaks
-both protocols itself. The offline tiers run against the in-process
-**double** (`pgd_connectivity::cryptostruct::double`, feature
-`cryptostruct-double`, forwarded by `pgd-node` so a strategy repo's tests
-can drive it): the market-data leg serves scripted books, the order-entry
-leg plays the Trading Adapter per account with scripted rows, fills,
-positions, statuses and loads, deterministic stamps and a recorded log of
-every frame. `.env` names `CS_ORGANIZATION`, one `CS_MD_<FEED>` per feed,
-`CS_TA_URL`, `CS_ACCOUNTS` and `PGD_CONTROL_TOKEN`; the example's instrument
-`id`s are placeholders to replace from the deployment's instrument list.
-`node.yaml` ships `dry_run: true`; going live takes the document saying
-`false` and an operator's `node.start`, and `--start` gives up the second
-key. **There is no live suite**: every assumption below is the double's
-reading of the venue, and issue #386 tracks the live run.
+both protocols itself. The offline tiers run against the in-process **sim**
+(`pgd_connectivity::cryptostruct::sim`, feature `cryptostruct-sim`,
+forwarded by `pgd-node` so a strategy repo's tests can drive it): the
+market-data leg serves scripted books, the order-entry leg plays the Trading
+Adapter per account with scripted rows, fills, positions and statuses,
+deterministic stamps and a recorded log of every frame. The example node
+trades two sources; `.env` names `CS_ORGANIZATION`, `CS_MD_BINANCE_USDT`,
+`CS_MD_BYBIT`, `CS_TA_BINANCE_USDT`, `CS_TA_BYBIT`, `CS_ACCOUNT_BINANCE_USDT`,
+`CS_ACCOUNT_BYBIT`, `CS_BACKEND_URL` and `PGD_CONTROL_TOKEN`; the example's
+instrument `id`s are placeholders to replace from the deployment's instrument
+list. `node.yaml` ships `dry_run: true`; going live takes the document saying
+`false` and an operator's `node.start`, and `--start` gives up the second key.
+The live suite is `crates/connectivity/tests/cryptostruct_live.rs`,
+`#[ignore]`d and read from `CS_LIVE_*` (and `CS_LIVE2_*` for the two-source
+run): each test ends with a fresh login finding nothing resting, and the
+harness cancels what it placed on stop and on unwind.
 
 ## Open questions and known gaps (issue #386)
 
@@ -310,12 +348,13 @@ Only a live deployment can answer the first group; the module fails safe.
 - Whether each exchange honours post-only; the login lists no bit for it.
 
 Departures still open on the module side: fills of `type: OTHER` and of
-never-adopted strangers are not booked; no position poll anchors an account
-while `Up`; an omitted resting order
-is closed `NotAtVenue` and then judged `Buried`; no venue metadata is
-checked; every order-entry socket is read every slice; three links go
-unwatched. One PR per item, ticked in #386, the venue document moving with
-it.
+never-adopted strangers are not booked; an order that finishes while its
+account is down comes back as nothing (no executions question); an omitted
+resting order is closed `NotAtVenue` and then judged `Buried`; the metadata
+check's deadline is outside the recovery worst case; the HTTP client's
+resolver has no timeout; whether the adapter cancels by `ownOrderId` alone
+before any statement is unproven; every order-entry socket is read every
+slice. One PR per item, ticked in #386, the venue document moving with it.
 
 ## Legacy stack, trading today
 

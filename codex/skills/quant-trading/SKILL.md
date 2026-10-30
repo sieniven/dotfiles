@@ -70,6 +70,10 @@ promotion in `quant-trading-validation`.
   order and position state from the venue; never trust local state alone.
 - Respect venue rate limits as a budgeted resource shared between quoting and
   cancels — reserve headroom for pulling quotes in a storm.
+- A test that places at a real venue tracks every order it sent and cancels
+  whatever no venue word has closed on stop and on drop, a panic included, then
+  checks that a fresh login finds nothing resting before any assertion; pin the
+  sweep against a silent venue double, not only the happy path.
 
 ## Risk
 
