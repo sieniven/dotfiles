@@ -13,11 +13,17 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # 3.9 is macOS's system python3, which the hooks run under.
-        python: ["3.9", "3.12"]
+        include:
+          # 3.9 is macOS's system python3, which the hooks run under. It is
+          # end-of-life, and setup-python publishes it only up to Ubuntu
+          # 24.04, so that leg stays pinned while ubuntu-latest moves on.
+          - python: "3.9"
+            os: ubuntu-24.04
+          - python: "3.12"
+            os: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
