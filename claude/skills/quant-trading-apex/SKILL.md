@@ -8,8 +8,8 @@ description: >-
   engine-middleware's `apex` venue module and `pgd-apex-sys` integrate it:
   document block, vendor callback threads and the session queue, five-level
   whole snapshots, status mapping, id series, recovery ladder, the seat's send
-  budget with its cancel reserve, UAT tiers, live-safety rules and the open
-  questions in issue #382. Use when working in crates/connectivity/src/apex or
+  budget with its cancel reserve, UAT tiers and live-safety rules. Use when
+  working in crates/connectivity/src/apex or
   crates/apex-sys of engine-middleware, in a strategy or monitor repo that
   names the apex feature or a connectivity.apex block, on an APEX UAT or
   production run, or with the vendor SDK and documents under
@@ -284,33 +284,6 @@ to check a candidate build. Live-safety facts to hold onto:
 - Read a run with `--nocapture`: the venue's error code appears only in the
   log, and `pgd_apex_sys::lookup` holds the table.
 
-## Open questions and known gaps (issue #382)
-
-Only the venue can answer the first group; the module fails closed meanwhile.
-
-- Answered 2026-10-09/12 on #382: a `NET` row is signed; `IsAutoSuspend` is
-  suspend-on-disconnect and the seat re-activates or deletes each order after
-  re-login; topic 111, `scope: single`; the orders query filters on
-  `InsertTime`. Still open: the status a suspended order shows, and the
-  clock times for the two session-hour keys, which come from the venue's
-  published schedule, not a question.
-- The venue has said amend is unsupported in production (V11); the node reads
-  that as an amend going unchecked against limits and band, so the engine's
-  `venue_limits` gate holds amends to both pairs.
-- Whether the quota counts queries (V4), what the library's own -2 and -3
-  limits are (V5), whether a price-only modify keeps queue priority (V3),
-  what an empty book's snapshot says after a re-login (V6), whether
-  production is NTP-disciplined (V9), and which request restates every book
-  without a login (V10: `ReqSubscribeTopic` with `SequenceNo` -1).
-
-Contract departures still open on the module side: a venue-ring drop flaps
-`Fatal` and `Up` instead of stopping the node; a full source lane is logged,
-not `Fatal`; the feed's session-queue loss count is never read; an
-unreadable timer answer leaves the source `Up` unbounded; a place is sent
-the slice it is popped whatever the word says; replayed rows carry neither
-`RECONCILED` nor `POSSIBLE_DUPLICATE`; no egress count is a series. One PR per
-item: fix it, tick it in #382, and move the venue document with it.
-
 ## Rules when changing the module
 
 - `build` opens no socket; the first slice does. Never link the libraries,
@@ -327,7 +300,8 @@ item: fix it, tick it in #382, and move the venue document with it.
 - `Down` at the first sign, `Fatal` only when the source cannot recover
   alone, `Up` only when both legs are logged in and positions are stated.
 - A change in described behaviour changes `docs/venues/APEX.md` in the same
-  PR; open work is a checkbox in #382, never a roadmap entry.
+  PR; open work and questions for the venue are checkboxes in the venue's
+  roadmap issue on GitHub, never a list in a document or in this skill.
 - Tests: the module's unit tests, `crates/tests/tests/apex_components.rs`
   against the stand-in, the vendor check in CI, and the live suite under
   `crates/tests-e2e/tests/e2e_apex/`, `#[ignore]`d. There is no e2e double
