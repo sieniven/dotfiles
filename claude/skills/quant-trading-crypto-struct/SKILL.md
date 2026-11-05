@@ -60,15 +60,19 @@ question only a live deployment can answer stays a question here.
   or position query**: a login or a status is the whole answer, and
   positions are pushed only on a change, before the fill they contain. Its
   own clocks: `tentative_reject_timeout_s` (3), `account_login_timeout_s`
-  (28), `unused_account_disconnect_delay_m`. It is to cancel a session's
-  resting orders on client disconnect; whether that fires, and on what scope,
-  nobody has confirmed. Exchange-side
+  (28), `unused_account_disconnect_delay_m`. It cancels a session's resting
+  orders on client disconnect, best effort and retried, scoped to the orders
+  that connection's session placed: an adopted stranger is not covered, and
+  every re-dial of an account cancels what its session rested. Live it took
+  every resting order on seven exchanges, while a place sent in the same
+  instant as the cut survived on gate spot and kucoin. Exchange-side
   timeouts (`HTTP_REQUEST_TIMEOUT`, `HTTP_REQUEST_FAILED`,
   `UNEXPECTED_RESPONSE`) mean it could not tell what the exchange did. It
   names an own order by `ownOrderId` (uuid) and `clientOrderId`, the
   exchange's by `exchangeOrderId`, takes batched requests (ten is Bybit's
-  documented batch size; whether a larger batch is split is open), and
-  answers a refused place or amend with `retryTimeNs`.
+  documented batch size; it splits a batch past an exchange's cap and
+  answers it over several `cancelResponse` messages), and answers a refused
+  place or amend with `retryTimeNs`.
   Derivatives sit in exchange-specific wallets (`derivatives`, `inverse`,
   `cross_margin`…), the document's to get right.
 - **Framing**: on a `unix://` connection every message is prefixed by a
@@ -206,8 +210,7 @@ depth subscribe refused eight times, or the market-data agent ending; a
 `Start` clears the login and feed-login verdicts by re-dialling and asks the
 backend afresh. On `Fatal` the source closes order entry to
 fire the adapter's disconnect cancel — the backstop, never the mechanism,
-covering no adopted stranger; whether it fires, and on what scope, is
-unconfirmed.
+scoped to the session's own orders and so covering no adopted stranger.
 
 **Recovery and anchoring.** Each account's recovery is its login, or an OK
 status after a not-OK one, bracketed per account so what the answer omits
