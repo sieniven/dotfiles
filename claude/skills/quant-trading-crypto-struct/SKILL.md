@@ -9,7 +9,7 @@ description: >-
   the `sources` document block, one market-data agent per source and its
   band, per-account login answers and brackets, strangers, batched cancels,
   per-account send windows, the position poll and metadata check, cancel on
-  disconnect as a backstop, the venue sim, issue #386. Also the legacy stack
+  disconnect as a backstop, the venue sim. Also the legacy stack
   trading on the same adapters today (the Python tradingenginecs engine and its StrategyBase
   callbacks, engine-backtesting parity, the Rust mm/hedger bot, money
   conventions). Use when working in the engine/, strategy/, monitor/ or
@@ -225,8 +225,8 @@ misses take the source `Down` without a relogin. The metadata check runs
 before each `Up` where `metadata_url` is set (tick, lot, currency, asset ids;
 a disagreement is `Fatal`, a silent backend `metadata.unverified`); its
 deadline is outside the recovery worst case. An order an answer omits while it still
-rests is closed `NotAtVenue` and keeps resting with no record anyone can
-cancel, an engine-side re-open tracked in issue #386.
+rests is closed `NotAtVenue`, and a later working row restates it as a new
+order.
 
 **Rate limits.** Each account has its own one-second window of
 `sends_per_second` (100): a place or an amend stops at 75, a cancel may
@@ -236,7 +236,7 @@ further (no exchange lists the capability). A `retryTimeNs` holds that account's
 places and amends until it passes, at most 60 s; one on a cancel is ignored
 and counted. A cancel the window refuses is restored by the engine and not
 sent again, so a stop drain past the window leaves the excess resting until
-`drain_timeout` (#386).
+`drain_timeout`.
 
 **Instruments and accounts.** Every instrument on a `Cs*` source has exactly
 one entry under its source's `instruments`, matched by `symbol`: the venue
@@ -320,41 +320,10 @@ list. `node.yaml` ships `dry_run: true`; going live takes the document saying
 The live suite is `crates/connectivity/tests/cryptostruct_live.rs`,
 `#[ignore]`d and read from `CS_LIVE_*` (and `CS_LIVE2_*` for the two-source
 run): each test ends with a fresh login finding nothing resting, and the
-harness cancels what it placed on stop and on unwind.
-
-## Open questions and known gaps (issue #386)
-
-Only a live deployment can answer the first group; the module fails safe.
-
-- Whether the Trading Adapter's cancel on disconnect fires, and on what
-  scope: socket or session. Scoped to the socket, every re-dial cancels that
-  account's resting orders.
-- What both adapters do on the control protocol: pongs, pings, idle timeouts,
-  what an idle Unix socket carries, whether `welcome` is sent on the domain
-  socket.
-- What the reconnect answers contain: row shapes of `orders[]` and
-  `instrumentPositions[]`, what the minimal status mode lists, whether an OK
-  follows `EXCHANGE_BUSY` or `BLOCKED`, whether a slow login's figure is
-  computed at send time, and whether fills during initialisation are
-  published again afterwards (counted twice if so).
-- How executions are accounted: one unit per instrument, the order of a
-  fill and its position push, pushes only on change, how a closed position
-  is sent, which fills follow a gap.
-- How an order is named: `exchangeOrderId` on the first `CONFIRMED` row, the
-  uniqueness scope of `ownOrderId`, whether a finished id is reused.
-- Amends and cancels in flight: the id a `PENDING_AMEND` row carries, the id
-  a refused amend echoes, whether another session's order can be acted on,
-  whether a cancel batch past the exchange's size is split.
-- Whether each exchange honours post-only; the login lists no bit for it.
-
-Departures still open on the module side: fills of `type: OTHER` and of
-never-adopted strangers are not booked; an order that finishes while its
-account is down comes back as nothing (no executions question); an omitted
-resting order is closed `NotAtVenue` and then judged `Buried`; the metadata
-check's deadline is outside the recovery worst case; the HTTP client's
-resolver has no timeout; whether the adapter cancels by `ownOrderId` alone
-before any statement is unproven; every order-entry socket is read every
-slice. One PR per item, ticked in #386, the venue document moving with it.
+harness cancels what it placed on stop and on unwind. Open questions for the
+venue and known gaps are the checkboxes of the venue's roadmap issue on
+GitHub, one PR per item with the venue document moving with it; no document
+and no skill carries that list.
 
 ## Legacy stack, trading today
 

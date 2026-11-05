@@ -8,8 +8,8 @@ description: >-
   token flow, ttaccount, ttmonitor, ttledger, environments, rate plans), and
   how engine-middleware's `tt` and `tt-rest` modules integrate them: vendored
   dictionary, borrow-only codec, session machine, order ledger, in-flight
-  ladder, REST position poller, what 'proven offline, not wireable' means,
-  issue #383 and the roadmap's live path. Use when working in
+  ladder, REST position poller, what 'proven offline, not wireable' means
+  and the roadmap's live path. Use when working in
   crates/connectivity/src/tt of engine-middleware, on anything that names the
   tt or tt-rest feature or TradingTechnologies, or with TT's FIX or REST
   documentation.
@@ -68,7 +68,7 @@ holds a real HTTP client, but nothing outside a test constructs it).
 through the `IngressWriter`, states everything on the source lane and never
 takes the venue half. `tt-rest` adds a `SnapshotSource` over the identity,
 account and monitor HTTP services, driven by a poller on an unpinned thread
-of its own with an `Instant` clock and an allocating channel (a #383
+of its own with an `Instant` clock and an allocating channel (a tracked
 departure), feeding the same never-drop account lane. `RestConfig` takes a
 base, an `Environment` (`UatCert` → `ext_uat_cert`, `ProdLive` →
 `ext_prod_live`) and an interval with a 5 s floor; `DEFAULT_ROOT` is
@@ -145,7 +145,8 @@ first position statement. The document block waits on all of that; its
 shape is an entry in `ConnectivityConfig` beside the APEX one. The other
 departures — `ts` from `TransactTime`, market data stamped at decode, the
 allocating outbound path, the poller's own thread and clock, no `Bound` —
-are bugs tracked as checkboxes in issue #383, one PR each.
+are bugs tracked as checkboxes in the venue's roadmap issue on GitHub, one
+PR each.
 
 ## TT facts the module leans on
 
@@ -211,7 +212,7 @@ with its source pages.
 - **Cancel-on-disconnect is unstated.** TT offers `18=o`, the venue
   contract requires cancel-on-disconnect "armed and stated where the venue
   offers it", and `docs/venues/TT.md` never mentions it. A candidate
-  checkbox for #383.
+  checkbox for the roadmap issue.
 - The REST token lifetime is undocumented; the 60 s renewal margin rests on
   each reply's `seconds_until_expiry` alone.
 - The reconnect delay the venue document describes is test-only; the live
@@ -226,7 +227,7 @@ with its source pages.
   reconnect (assume yes), a reset schedule specific to market-data sessions,
   the maximum sessions per company, price formats and fractional ticks, and
   the per-exchange order-type and TIF matrix in the Setup help.
-- The #383 departures listed above, plus "`Up` before the poller has asked
+- The departures listed above, plus "`Up` before the poller has asked
   anything" and the in-flight ladder forcing a terminal on a request the
   venue never answered.
 
@@ -237,11 +238,11 @@ with its source pages.
 - The codec stays borrow-only and the inbound path allocation-free; a change
   to the outbound path should reduce its allocations, never add to them.
 - Every `impl Transport` outside a test is a design change: it belongs to
-  the live path in `docs/roadmap/TT_ROADMAP.md`, not to a fix.
+  the live path in the venue's roadmap issue on GitHub, not to a fix.
 - A sequence gap on market data is `Down`, never a silent resync; a
   `Divergence` is never retried.
 - A change in described behaviour changes `docs/venues/TT.md` in the same
-  PR; open work is a checkbox in #383.
+  PR; open work is a checkbox in the venue's roadmap issue on GitHub.
 - On this machine the test-running rules in `~/.claude/CLAUDE.local.md` and
   the repo's own `CLAUDE.local.md` decide how a test binary may run; pass
   `--all-features` explicitly so `tt` and `tt-rest` compile in, and treat a
