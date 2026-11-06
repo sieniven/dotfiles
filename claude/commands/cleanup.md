@@ -28,6 +28,8 @@ Clean up after this session. Extra worktrees named by the user: $ARGUMENTS
    left alone. Pass on any `Note:` lines. If worktrees the user expected show
    up as left alone (typical after `/clear`, whose transcript starts empty),
    tell them to rerun with the names: `/cleanup latency cs-latency`.
+   Worktrees a subagent created are missing from the transcript scan the same
+   way; name them too once their PRs merged.
 4. For each kept item, name the step that would free it (commit and push, merge
    the PR, wait for the other session, or `/cleanup <name>` to skip the
    other-session check) and stop. Never remove a kept worktree or branch
