@@ -130,7 +130,11 @@ within `min(roi_ticks, 510)` ticks of each best; a delta outside it is
 dropped (`levels_outside_band`), and a best within a quarter of the kept
 span of its bound recentres by resubscribe, gapping the book under a
 cooldown doubling 1 s to 60 s. An off-grid level or off-step size is skipped
-and gaps the book; an update over 1 023 levels is dropped whole. `TopOfBook`
+and gaps the book; an update over 1 023 levels is dropped whole. OKX's
+400-level depth reaches 30–50 bps on ETH-USDT and far wider on a sparse
+swap: a check that reads a resting order back from the node's book proves
+nothing beyond the depth the feed carries, so judge it only inside that
+depth. `TopOfBook`
 is published for `l1` instruments alone, so a strategy on an L2 book hears
 no `on_top_of_book` here. `Reference` carries the last trade and the mark
 but no limits, and no `MarketStats` exists, so the `venue_limits` gate
@@ -143,7 +147,13 @@ holds the source `Down` until the instrument leaves the document.
 **Account truth.** Every statement rides the source lane in the adapter's
 order; `venue_seq` is `None` and out-of-order rows are counted, never
 reordered. `venue_ts` is the row's `exchangeTimestampNs` where a row gives
-one. A fill's `cum_qty` is the source's own, the larger of what rows stated
+one. A wallet entry's `exchangeTimestampNs` is the venue's last change of
+*any* field of the entry, not of its cash: on Bitget a reservation moves
+`available` under a stamp later than a fill whose cash lands a millisecond
+later, so the fold dates a push only when its cash moved and its stamp
+advanced. To learn what a push carries, log a read-only `TaSession` from
+`scripts/cs-judge.py` beside the node rather than infer it from the engine's
+log. A fill's `cum_qty` is the source's own, the larger of what rows stated
 and fills summed; a fill landing after the `orderUpdate` that already
 stated it is booked as an implied lot at the limit and then priced, so each
 lot books once in either order. **Strangers** — orders another tool placed
@@ -154,11 +164,22 @@ cancel and amend by what the socket took: a frame that never left is
 `SessionDown`, one cut mid-frame or unanswered is `InDoubt`; a place whose
 frame never left is `SessionDown`, and one written or cut keeps its binding
 for the next login's answer. **Positions** are
-`long − short` per pair, folded per account from pushes; isolated and hedge
-mode are unsupported and spot is refused for execution. Positions and
-balances carry venue stamps and are stated last before `Up`, because the
-push precedes the fill it holds. A `PENDING_AMEND` row restates the order as
-working and answers nothing.
+`long − short` per pair, folded per account: the login's list and the poll's
+answer are the account whole, a `positionUpdate` carries only the rows that
+changed and is merged over the standing figure (each pair keeps its own date
+and receipt, stated as the venue dated it, always; a push restates the pairs
+it named alone, and Bitget's 2 s republish of an unchanged position is a
+repeat the engine counts apart, never a skip), and a close is a row at zero;
+isolated and hedge mode are unsupported and spot is refused for execution. Positions and balances carry venue stamps and are stated last
+before `Up`, because the push precedes the fill it holds. A `PENDING_AMEND`
+row restates the order as working and answers nothing.
+The engine judges a position statement but adopts a wallet statement and
+anchors on it, so the two folds date rows differently and no fold ever states
+a row undated to make the engine judge it: the venue's stamp is the venue's
+claim, and a republish under it is the engine's to count as a repeat (Niven,
+2026-11-06). A wallet entry is dated only where its cash moved under a stamp
+newer than any the slot has carried; an unmoved republish stays dated so the
+engine skips it and keeps the anchor that covers a late fee row.
 
 **Egress.** Cancels on one instrument and account batch up to
 `cancel_batch_max` (10); a place or an amend is one entry per frame. `Gtc` → `GOOD_TILL_CANCEL`, `Ioc` → `IMMEDIATE_OR_CANCEL`,
@@ -222,7 +243,7 @@ is taken whole; a connection gone before its answer doubles it and spends an
 ask (`drops_unanswered`). Down to up is about 14 s; the worst case for the
 login question, about 84 s at the defaults (1 s and 2 s backoffs, then the
 settle hold), is held inside the engine's 90 s dwell by a build-time check.
-The position poll (`position_poll_secs`, off unless the document sets it)
+The position poll (`position_poll_secs`, required on a source executing a derivative, a document without it refused at load)
 through the adapter's HTTP API is the one anchor while `Up`; `poll_misses_down`
 misses take the source `Down` without a relogin. The metadata check runs
 before each `Up` where `metadata_url` is set (tick, lot, currency, asset ids;
@@ -278,7 +299,7 @@ name (an entry nothing names, or a named variant with no entry, is refused).
 | `sources.<Cs*>.order_entry.pending_out_bytes` | 64 KiB | unsent bytes per account; undersized costs latency |
 | `sources.<Cs*>.order_entry.stall_ms` | 250 | unsent bytes older than this tear the connection down |
 | `sources.<Cs*>.order_entry.tentative_reject_secs` | 3 | the adapter's `tentative_reject_timeout_s` |
-| `sources.<Cs*>.order_entry.api_url`, `position_poll_secs`, `poll_misses_down` | absent, 0, 3 | the position poll over the adapter's HTTP API |
+| `sources.<Cs*>.order_entry.api_url`, `position_poll_secs`, `poll_misses_down` | absent, 0, 3 | the position poll over the adapter's HTTP API; the poll is required where the source executes a derivative, `api_url` with a `unix://` url |
 | `sources.<Cs*>.instruments[]` | required | `symbol`, `id`, `kind`, `wallet_type`, `topics`, `tob_coalescing`; no `exchange`, the variant is the exchange |
 
 Floors, ranges and counts are checked by the venue's own constructors;

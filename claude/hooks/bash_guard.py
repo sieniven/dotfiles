@@ -235,6 +235,9 @@ def check_git(argv, ctx, findings):
                 if not vals or a.index("n") < min(vals):
                     findings.add(DENY, "no-verify", "`git commit -n` bypasses git hooks; fix what the hook flags instead.")
         check_commit_secrets(args, repo, ctx, findings)
+        check_conflict_markers(repo, findings)
+    elif sub == "merge" and "--continue" in args:
+        check_conflict_markers(repo, findings)
     elif sub == "add":
         paths = [a for a in args if not a.startswith("-")]
         if any(a in ("-A", "--all", "-u", "--update") for a in args) or "." in paths or ":/" in paths:
@@ -498,6 +501,15 @@ def scan_diff(diff, findings):
             added.setdefault(current, []).append(line[1:])
     for path, lines in added.items():
         scan_lines(lines, path, findings)
+
+
+def check_conflict_markers(repo, findings):
+    top = git_out(repo, "rev-parse", "--show-toplevel").strip()
+    if not top:
+        return
+    staged = git_out(top, "diff", "--cached", "-U0", "--no-color", "--no-ext-diff")
+    if re.search(r"^\+(<{7} |={7}$|>{7} )", staged, re.M):
+        findings.add(DENY, "conflict-markers", "The index holds conflict markers: resolve the file and stage it again (a merge commit shipped with them on 2026-11-06).")
 
 
 def check_commit_secrets(args, repo, ctx, findings):

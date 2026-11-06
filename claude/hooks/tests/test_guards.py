@@ -181,6 +181,19 @@ class BashGuardTest(unittest.TestCase):
         self.assertEqual(self.decide("git commit -m env", cwd=repo.dir), "deny")
         repo.git("reset", "-q")
 
+    def test_conflict_markers_in_the_index_deny_a_commit(self):
+        repo = GitRepo("feat")
+        repo.write("doc.md", "ours\n<<<<<<< HEAD\na\n=======\nb\n>>>>>>> origin/main\n")
+        repo.git("add", "doc.md")
+        self.assertEqual(self.decide("git commit -m merge", cwd=repo.dir), "deny")
+        self.assertEqual(self.decide("git merge --continue", cwd=repo.dir), "deny")
+        repo.write("doc.md", "ours\na\nb\n")
+        repo.git("add", "doc.md")
+        self.assertIsNone(self.decide("git commit -m merge", cwd=repo.dir))
+        repo.write("doc.md", "ours\na line with ======= inside\n")
+        repo.git("add", "doc.md")
+        self.assertIsNone(self.decide("git commit -m text", cwd=repo.dir), "a marker is a line of its own")
+
     def test_secret_generic_assignment_asks(self):
         repo = GitRepo("feat")
         repo.write("cfg.py", 'api_key = "Zq8rT2mN4vB7xK1pL9sD"\n')

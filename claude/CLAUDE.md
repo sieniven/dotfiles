@@ -27,6 +27,8 @@ CLAUDE.md.
   edit, run the narrowest build/test/lint that covers it, or state plainly that the
   change is unverified and why. A Stop hook holds the turn open once when neither
   happened, and when debug leftovers remain.
+- **A command for me to paste is one short line**: a preset flag or a wrapper
+  script, never a long flag string, which wraps and breaks on paste.
 
 ## Environment
 

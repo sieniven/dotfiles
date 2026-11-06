@@ -59,6 +59,10 @@ promotion in `quant-trading-validation`.
   overflow. Checked or saturating ops wherever the input came from outside.
 - Rounding is a decision, not a default. State the direction and who it
   favors; round at the venue boundary, not mid-calculation.
+- A venue keeps the fraction of a fee below the ledger unit that the engine
+  rounds away, so a sell sized to the engine's figure is refused by a lot:
+  size it from the venue's figure, or from the reckoning less those fractions
+  summed over the fills, never from a flat unit a fill.
 
 ## Exchange boundary
 
