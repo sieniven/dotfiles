@@ -48,7 +48,9 @@ and `rules/default.rules` when the user accepts command approvals; inspect these
 diffs before committing. Do not place credentials or tokens in tracked files.
 
 `local/AGENTS.local.md` and `local/engine-middleware.md` are independent,
-untracked copies of machine-only test routing. Existing named test runners under
+untracked copies of machine-only test routing. `local/ssh-dev-hosts` (one ssh
+alias or address per line) names the hosts where `bash_guard.py`'s `remote`
+check lets anything run; every other host stays read-only. Existing named test runners under
 `~/.cache/claude-scratch/` are real machine dependencies; the port does not rename
 or edit them. A new machine supplies its own local context. `AGENTS.md` explicitly
 routes to it, and SessionStart/SubagentStart inject it when trusted.

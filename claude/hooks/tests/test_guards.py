@@ -213,6 +213,59 @@ class BashGuardTest(unittest.TestCase):
         self.assertEqual(self.decide("gh pr merge 1 'oops"), "deny")
 
 
+class RemoteGuardTest(unittest.TestCase):
+    """Every host but the dev hosts is read-only: anything else asks."""
+
+    def setUp(self):
+        self.home = tempfile.mkdtemp()
+        self.env = {"HOME": self.home, "CLAUDE_GUARD_DIRECT_TESTS": "0", "CLAUDE_SSH_DEV_HOSTS": "devbox"}
+
+    def decide(self, command, env=None):
+        e = dict(self.env)
+        e.update(env or {})
+        return run_hook("bash_guard.py", {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": self.home}, e)[0]
+
+    def test_reads_of_configs_and_logs_pass(self):
+        for cmd in ["ssh prod 'tail -n 100 /var/log/app.log | grep -i error'",
+                    "ssh -o BatchMode=yes -o ConnectTimeout=10 ubuntu@10.0.0.5 cat /etc/app/config.yaml",
+                    "ssh prod 'journalctl -n 200 -u app --no-pager 2>/dev/null'",
+                    "ssh prod 'ls -la ~/code && head -50 ~/code/node.yaml 2>&1'",
+                    "ssh -G prod", "ssh -T git@github.com",
+                    "scp prod:/etc/app.yaml ~/.cache/claude-scratch/",
+                    "rsync -az prod:/var/log/app/ ./logs/"]:
+            self.assertIsNone(self.decide(cmd), cmd)
+
+    def test_anything_else_on_a_non_dev_host_asks(self):
+        for cmd in ["ssh prod 'sudo systemctl restart app'", "ssh prod 'cat /etc/x > /tmp/y'",
+                    "ssh prod 'tail -f /var/log/x'", "ssh prod 'journalctl --vacuum-time=1d'",
+                    "ssh prod 'ls; reboot'", "ssh prod 'cat $(rm -f x)'", "ssh prod tmux attach -t live",
+                    "ssh prod", "ssh -N -L 9009:127.0.0.1:9009 ubuntu@10.0.0.5", "ssh -A prod ls",
+                    "ssh -o ForwardAgent=yes prod ls", "ssh prod 'sort -o /etc/x /etc/x'",
+                    "scp ./node.yaml prod:~/", "rsync -az ./ prod:/srv/", "rsync -az --remove-source-files prod:/x ./",
+                    "sftp prod", "aws ssm send-command --instance-ids i-1 --document-name AWS-RunShellScript",
+                    "aws ssm start-session --target i-1", "bash -c \"ssh prod 'kill 1'\"",
+                    "ssh devbox 'ssh prod rm -rf /data'"]:
+            self.assertEqual(self.decide(cmd), "ask", cmd)
+
+    def test_dev_hosts_run_anything(self):
+        for cmd in ["ssh devbox 'cd ~/src/x && cargo test && sudo reboot'", "ssh -A devbox 'cargo fetch'",
+                    "rsync -az --delete -e 'ssh -i k' ./ devbox:src/x/", "scp ./a ubuntu@devbox:~/", "ssh devbox"]:
+            self.assertIsNone(self.decide(cmd), cmd)
+
+    def test_dev_hosts_from_local_file(self):
+        e = {"CLAUDE_SSH_DEV_HOSTS": ""}
+        self.assertEqual(self.decide("ssh devbox reboot", env=e), "ask")
+        self.env.pop("CLAUDE_SSH_DEV_HOSTS")
+        os.makedirs(os.path.join(self.home, ".claude", "local"))
+        with open(os.path.join(self.home, ".claude", "local", "ssh-dev-hosts"), "w") as fh:
+            fh.write("# dev boxes\ndevbox  # scratch\n")
+        self.assertIsNone(self.decide("ssh devbox reboot"))
+        self.assertEqual(self.decide("ssh prod reboot"), "ask")
+
+    def test_switch_off(self):
+        self.assertIsNone(self.decide("ssh prod reboot", env={"CLAUDE_HOOKS_DISABLE": "bash-guard:remote"}))
+
+
 class EditGuardTest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp()

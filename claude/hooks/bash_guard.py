@@ -22,6 +22,13 @@ Checks (ids for CLAUDE_HOOKS_DISABLE, prefixed `bash-guard:`):
                      docker volume/system prune
   secrets      deny  committing private keys, known token formats, .env/key files;
                      ask for generic `password = "..."`-style assignments
+  remote       ask   ssh/scp/rsync/sftp/mosh/ssh-copy-id and `aws ssm` / EC2 Instance
+                     Connect to any host but the machine's dev hosts
+                     (CLAUDE_SSH_DEV_HOSTS, else ~/.claude/local/ssh-dev-hosts), unless
+                     the remote command only reads configs and logs (cat, tail, grep,
+                     ls, bounded journalctl, ... with no file redirect) or the copy
+                     only pulls from the host; agent forwarding to them too. Commands
+                     sent to a dev host are checked again for remote hops only
 """
 
 import fnmatch
@@ -186,6 +193,7 @@ class Ctx:
         self.cwd = cwd or os.getcwd()
         self.added_paths = None  # None: no `git add` seen; [] : add-all
         self.add_all = False
+        self.depth = 0
 
 
 def git_out(repo, *args):
@@ -448,6 +456,174 @@ def check_docker(argv, findings):
 
 
 # --------------------------------------------------------------------------
+# Remote hosts: read-only everywhere but the machine's dev hosts
+
+# Every option of ssh(1) that takes an argument; the rest are flags.
+SSH_ARG_OPTS = set("BbcDEeFIiJLlmOopQRSWw")
+# Reads only: no command here can write a file or change the host (so not sort -o,
+# uniq IN OUT, date -s or hostname NAME).
+REMOTE_READ_HEADS = {"cat", "tail", "head", "grep", "egrep", "fgrep", "zgrep", "zcat", "ls", "stat", "wc",
+                     "journalctl", "cd", "true", "echo", "cut", "uname"}
+JOURNAL_WRITES = ("--rotate", "--flush", "--sync", "--relinquish-var", "--smart-relinquish-var",
+                  "--setup-keys", "--update-catalog", "--vacuum-")
+REMOTE_ALWAYS_OK = {"github.com", "gitlab.com", "bitbucket.org"}
+REMOTE_MSG = (
+    "`%s` on `%s` is not a read of configs or logs. Every host but this machine's dev hosts"
+    " (%s) is read-only: run, deploy, write, start, stop or attach only with the user's"
+    " explicit permission for this action (see the ssh-hosts skill, or the machine-local rules)."
+)
+
+
+def remote_dev_hosts():
+    """The hosts where anything goes: CLAUDE_SSH_DEV_HOSTS, else ~/.claude/local/ssh-dev-hosts."""
+    env = os.environ.get("CLAUDE_SSH_DEV_HOSTS")
+    if env is not None:
+        return {h.strip() for h in env.split(",") if h.strip()}
+    try:
+        with open(os.path.join(HOME, ".claude", "local", "ssh-dev-hosts"), encoding="utf-8") as fh:
+            return {l.split("#", 1)[0].strip() for l in fh if l.split("#", 1)[0].strip()}
+    except OSError:
+        return set()
+
+
+def remote_host(dest):
+    """`user@host`, `ssh://user@host:port`, `host:path` -> host."""
+    if "://" in dest:
+        auth = dest.split("://", 1)[1].split("/", 1)[0].rsplit("@", 1)[-1]
+        return (auth.rsplit(":", 1)[0] if auth.count(":") == 1 else auth).strip("[]")
+    return dest.rsplit("@", 1)[-1].split(":", 1)[0].strip("[]")
+
+
+def remote_exempt(host, dev):
+    return host in dev or host in REMOTE_ALWAYS_OK
+
+
+def remote_command_is_read(cmd):
+    """True when every simple command is a bounded read and nothing is written to a file."""
+    toks = tokenize(cmd)
+    for i, tok in enumerate(toks):
+        if tok and all(c in "<>&" for c in tok) and ">" in tok:
+            nxt = toks[i + 1] if i + 1 < len(toks) else ""
+            if not (nxt == "/dev/null" or tok.endswith("&") and nxt.isdigit() or nxt == "&"):
+                return False
+    for raw in split_simple_commands(cmd):
+        argv, _ = unwrap(raw, Findings())
+        if not argv:
+            continue
+        head, args = os.path.basename(argv[0]), argv[1:]
+        if head not in REMOTE_READ_HEADS:
+            return False
+        if head == "tail" and any(a in ("-f", "-F", "--follow") or a.startswith("--follow=")
+                                  or (short_cluster(a) and ("f" in a or "F" in a)) for a in args):
+            return False
+        if head == "journalctl" and any(
+            a in ("-f", "--follow") or (short_cluster(a) and "f" in a) or a.startswith(JOURNAL_WRITES) for a in args
+        ):
+            return False
+    return True
+
+
+def check_ssh(argv, ctx, findings, dev):
+    args, i, flags, options = argv[1:], 0, set(), []
+    while i < len(args) and args[i].startswith("-") and args[i] != "--":
+        opt = args[i][1:]
+        for k, c in enumerate(opt):
+            if c in SSH_ARG_OPTS:
+                value = opt[k + 1:]
+                if not value and i + 1 < len(args):
+                    i += 1  # the argument is the next word
+                    value = args[i]
+                if c == "o":
+                    options.append(value.lower())
+                break
+            flags.add(c)
+        i += 1
+    if i < len(args) and args[i] == "--":
+        i += 1
+    if "G" in flags or "V" in flags or i >= len(args):
+        return
+    host, remote = remote_host(args[i]), " ".join(args[i + 1:])
+    if remote_exempt(host, dev):
+        if remote:
+            analyze(remote, ctx, findings, depth=ctx.depth + 1, remote_only=True)
+        return
+    dev_list = ", ".join(sorted(dev)) or "none set"
+    if "A" in flags or any(o.startswith("forwardagent") and not o.endswith("=no") for o in options):
+        findings.add(ASK, "remote", "Forwarding an ssh agent to `%s` lends it every key the agent holds; forward only to"
+                                    " this machine's dev hosts (%s), and only an agent holding nothing but the key"
+                                    " the job needs." % (host, dev_list))
+    if not remote:
+        what = "a port-forward or tunnel" if "N" in flags else "an interactive login"
+        findings.add(ASK, "remote", REMOTE_MSG % ("ssh (%s)" % what, host, dev_list))
+    elif not remote_command_is_read(remote):
+        findings.add(ASK, "remote", REMOTE_MSG % (remote[:120], host, dev_list))
+
+
+def remote_operand(arg):
+    """The host of an scp/rsync operand, or None for a local path."""
+    if arg.startswith(("/", "./", "../", "~")) or ":" not in arg:
+        return None
+    if "://" in arg:
+        return remote_host(arg)
+    head = arg.split(":", 1)[0]
+    return None if "/" in head else remote_host(arg)
+
+
+def check_copy(head, argv, findings, dev):
+    one_arg = {"scp": {"-c", "-D", "-F", "-i", "-J", "-l", "-o", "-P", "-S", "-X"},
+               "rsync": {"-e", "--rsh", "-f", "--filter", "--exclude", "--include", "--exclude-from",
+                         "--include-from", "--files-from", "-B", "--block-size", "-T", "--temp-dir",
+                         "--rsync-path", "--log-file", "--partial-dir", "--chmod", "--chown",
+                         "--password-file", "--out-format", "-M", "--remote-option"}}.get(head, set())
+    args, ops, i = argv[1:], [], 0
+    while i < len(args):
+        a = args[i]
+        if a in one_arg:
+            i += 2
+            continue
+        if not a.startswith("-") or a == "-":
+            ops.append(a)
+        i += 1
+    if len(ops) < 2:
+        return
+    *sources, dest = ops
+    dest_host = remote_operand(dest)
+    if dest_host and not remote_exempt(dest_host, dev):
+        findings.add(ASK, "remote", REMOTE_MSG % ("%s to %s" % (head, dest), dest_host, ", ".join(sorted(dev)) or "none set"))
+    if head == "rsync" and "--remove-source-files" in args:
+        for s in sources:
+            host = remote_operand(s)
+            if host and not remote_exempt(host, dev):
+                findings.add(ASK, "remote", REMOTE_MSG % ("rsync --remove-source-files", host, ", ".join(sorted(dev)) or "none set"))
+
+
+def check_aws(argv, findings):
+    words = [a for a in argv[1:] if not a.startswith("-")]
+    pair = tuple(words[:2])
+    if pair in (("ssm", "send-command"), ("ssm", "start-session"), ("ssm", "start-automation-execution")) or (
+        words[:1] == ["ec2-instance-connect"]
+    ):
+        findings.add(ASK, "remote", "`aws %s` runs commands on an instance; every host but this machine's dev hosts"
+                                    " is read-only without the user's explicit permission for this action." % " ".join(pair))
+
+
+def check_remote(head, argv, ctx, findings):
+    if not enabled(HOOK + ":remote"):
+        return
+    dev = remote_dev_hosts()
+    if head == "ssh":
+        check_ssh(argv, ctx, findings, dev)
+    elif head in ("scp", "rsync"):
+        check_copy(head, argv, findings, dev)
+    elif head in ("sftp", "mosh", "ssh-copy-id"):
+        host = remote_host(next((a for a in argv[1:] if not a.startswith("-")), ""))
+        if host and not remote_exempt(host, dev):
+            findings.add(ASK, "remote", REMOTE_MSG % (head, host, ", ".join(sorted(dev)) or "none set"))
+    elif head == "aws":
+        check_aws(argv, findings)
+
+
+# --------------------------------------------------------------------------
 # Secret scan on commit
 
 SECRET_DENY = [
@@ -548,21 +724,28 @@ def check_commit_secrets(args, repo, ctx, findings):
 # --------------------------------------------------------------------------
 
 
-def analyze(command, ctx, findings, depth=0):
+def analyze(command, ctx, findings, depth=0, remote_only=False):
+    """Check each simple command. `remote_only` is a command bound for a dev host: only
+    hops onward to other hosts are checked, since its tests and writes run over there."""
     if depth > 3:
         return
     for raw in split_simple_commands(command):
-        argv, assigns = unwrap(raw, findings)
+        ctx.depth = depth
+        argv, assigns = unwrap(raw, Findings() if remote_only else findings)
         if not argv:
             continue
         head = os.path.basename(argv[0])
         if head in SHELLS:
             for j, a in enumerate(argv[1:-1], start=1):
                 if a == "-c" or (short_cluster(a) and "c" in a):
-                    analyze(argv[j + 1], ctx, findings, depth + 1)
+                    analyze(argv[j + 1], ctx, findings, depth + 1, remote_only)
                     break
         elif head == "eval":
-            analyze(" ".join(argv[1:]), ctx, findings, depth + 1)
+            analyze(" ".join(argv[1:]), ctx, findings, depth + 1, remote_only)
+        elif head in ("ssh", "scp", "rsync", "sftp", "mosh", "ssh-copy-id", "aws"):
+            check_remote(head, argv, ctx, findings)
+        elif remote_only:
+            continue
         elif head == "cd" and len(argv) > 1:
             ctx.cwd = resolve(ctx.cwd, argv[1])
         elif head == "git":

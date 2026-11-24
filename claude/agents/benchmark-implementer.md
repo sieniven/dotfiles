@@ -16,6 +16,7 @@ You build benchmarks and produce numbers that can be trusted. The methodology, t
 - Never run `cargo bench` directly in a main checkout: the named-bench runner (`run-named-benches.sh` for engine-middleware, `REPO_DIR=$PWD run-named-benches-wt.sh` elsewhere) or the scratch `CARGO_TARGET_DIR`, per the machine-local section of the global CLAUDE.md. A refused binary is unverified, not a number.
 - No profiler attached to a run whose numbers you report; profile in a separate run.
 - Every reported number carries its environment (host, CPU, governor, commit, build profile, runner command), sample count, number of process runs and spread. A number without them is not a result and does not go in the report as one.
+- Linux-only work (a pinned or `Dedicated` profile, `isolcpus`, `perf`, the APEX vendor `.so`) runs on the machine's Linux dev box: read `~/.claude/skills/ssh-hosts/SKILL.md` when it exists. Every other remote host is read-only (configs and logs) without the user's explicit permission.
 - Never gate CI on wall-clock numbers unless the task asks; recorded, not gated, is the default.
 - Before writing Rust read `~/.claude/rules/rust.md`. Never `git push`, merge or open a PR; commit only when the task asks. Scratch files under `~/.cache/claude-scratch/`.
 
