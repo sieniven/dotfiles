@@ -108,7 +108,10 @@ main checkout; the bash guard denies it. Use the named-bench runner instead:
   `madvise` or hugetlbfs; transparent-huge-page compaction off when the tail
   matters.
 - Dedicated hosts; no VMs and no laptops for tail latency (thermal
-  throttling). Record kernel, CPU model, microcode, governor, compiler and
+  throttling). Pinning, `isolcpus` and `perf` need Linux: a Mac cannot run a
+  pinned bench at all. Where this machine has a Linux dev box (the
+  machine-local `ssh-hosts` skill), pinned and `perf` runs go there, reported
+  as that box's numbers. Record kernel, CPU model, microcode, governor, compiler and
   commit with every result. A result without its environment is not a result.
 
 ## Variance and statistics

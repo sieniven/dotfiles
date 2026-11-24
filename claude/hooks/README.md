@@ -16,13 +16,16 @@ repo's. Create `~/.claude/CLAUDE.local.md` from `../CLAUDE.local.md.example`:
 while it mentions `cargo test`. Hooks, skills and commands hot-reload through
 the links, so a branch checkout here is live in every open session.
 `python3 ~/.claude/scripts/lint_harness.py` then lints the installed tree.
+List the machine's dev hosts, one ssh alias or address per line, in the
+untracked `~/.claude/local/ssh-dev-hosts`: `bash_guard.py`'s `remote` check
+lets anything run there and keeps every other host read-only.
 
 Python 3.8+ stdlib only, so macOS's system `python3` runs them. Every hook
 fails open: an internal error prints to stderr and the tool call proceeds.
 
 | Hook | Event | What it does |
 |------|-------|--------------|
-| `bash_guard.py` | PreToolUse `Bash` | Denies `gh pr merge`, `nohup`, `pkill -f`, `--no-verify`, force-push/delete of `main`/`master`, direct `cargo test`/`just test` where `CLAUDE.local.md` routes tests elsewhere (not inside a linked git worktree, and not when `CARGO_TARGET_DIR`/`--target-dir` sends output under `$HOME` outside the checkout), `rm -r` of `/`/`~`, commits that add private keys, known token formats or `.env`/key files, and a commit or `merge --continue` whose index holds conflict markers. Asks before other force-pushes, `git reset --hard`, `git clean -f`, `rm -r .`/`..`, docker volume prunes, and generic `password = "..."` assignments in a commit |
+| `bash_guard.py` | PreToolUse `Bash` | Denies `gh pr merge`, `nohup`, `pkill -f`, `--no-verify`, force-push/delete of `main`/`master`, direct `cargo test`/`just test` where `CLAUDE.local.md` routes tests elsewhere (not inside a linked git worktree, and not when `CARGO_TARGET_DIR`/`--target-dir` sends output under `$HOME` outside the checkout), `rm -r` of `/`/`~`, commits that add private keys, known token formats or `.env`/key files, and a commit or `merge --continue` whose index holds conflict markers. Asks before `ssh`/`scp`/`rsync`/`sftp`/`aws ssm` to any host but the machine's dev hosts unless the remote command only reads configs and logs or the copy only pulls (and before forwarding an agent to such a host), other force-pushes, `git reset --hard`, `git clean -f`, `rm -r .`/`..`, docker volume prunes, and generic `password = "..."` assignments in a commit |
 | `session_handoff.py` | SessionStart (`startup\|resume\|compact`, never `clear`), PreCompact, SessionEnd | Keeps one handoff file per session under `~/.local/state/claude-hooks/handoffs/<project>/`: a snapshot digested from the transcript (requests, files changed, commands with ✓/✗, open todos, last reply) plus the narrative `/handoff` writes. Saves it before compaction and restores it right after. A new session gets a one-line pointer to the previous goal; a cleared session gets nothing. `/handoff` and `/pickup` find the session's own file via `$CLAUDE_CODE_SESSION_ID` (`narrate`, `previous`) |
 | `suggest_compact.py` | PostToolUse `*`, SessionStart `compact` | Counts tool calls per session; at 60 and every 40 after, tells Claude to suggest `/handoff` + `/compact` at the next phase boundary. Resets on compaction |
 | `format_tracker.py` | PreToolUse `Edit\|Write\|MultiEdit` | On the first touch of a `.rs`/`.py`/`.go` file per session, records whether it was already `rustfmt`/`ruff format`/`gofmt` clean (ruff only where the project configures it). `rustfmt` gets the edition `cargo fmt` would pass: the crate's own, or under `edition.workspace = true` the workspace root's |
@@ -44,6 +47,7 @@ follows `cd` to decide whether the command runs in a linked worktree, and reads
 | `CLAUDE_HOOKS_DISABLE=a,b` | Disable hook ids (`bash-guard`) or single checks (`bash-guard:secrets`) |
 | `CLAUDE_GUARD_DIRECT_TESTS=1\|0` | Force the direct-test check on/off (default: on iff `~/.claude/CLAUDE.local.md` mentions `cargo test`). Even when on, it skips linked git worktrees and a target dir redirected under `$HOME` outside the checkout |
 | `CLAUDE_PROTECTED_BRANCHES=a,b` | Extra protected branches besides `main`, `master` |
+| `CLAUDE_SSH_DEV_HOSTS=a,b` | Hosts (ssh aliases or addresses) where `bash-guard:remote` lets anything run. Default: one per line in the untracked `~/.claude/local/ssh-dev-hosts` (`#` comments); none means every host is read-only |
 | `CLAUDE_PROTECTED_PATHS=glob,...` | Extra files `edit_guard` asks about (fnmatch on the absolute path) |
 | `CLAUDE_HANDOFF_MAX_CHARS` | Cap on handoff text injected at SessionStart (default 8000) |
 | `CLAUDE_HANDOFF_KEEP` / `CLAUDE_HANDOFF_MAX_AGE_DAYS` | Handoff files kept per project (30) / max age of the startup pointer (7 days) |
@@ -51,7 +55,7 @@ follows `cd` to decide whether the command runs in a linked worktree, and reads
 | `CLAUDE_VERIFY_PATTERNS` | Regex for extra commands that count as verification at Stop — set it to the machine's named-test runner |
 | `CLAUDE_HOOK_STATE_DIR` | Where stateful hooks keep per-session state (default `~/.local/state/claude-hooks`) |
 
-Check ids: `bash-guard:{merge,nohup,pkill-f,no-verify,force-push,direct-tests,destructive,secrets,conflict-markers}`,
+Check ids: `bash-guard:{merge,nohup,pkill-f,no-verify,force-push,direct-tests,destructive,secrets,conflict-markers,remote}`,
 `edit-guard:{lint-config,secrets,prod-config,harness}`. Hook ids: `bash-guard`,
 `edit-guard`, `session-handoff`, `suggest-compact`, `stop-gate`
 (`stop-gate:{format,debug,verify}`).

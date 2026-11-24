@@ -16,6 +16,11 @@ that repo's own AGENTS.md.
 - **Plan before coding.** For new features, multi-file changes, new test suites,
   or refactors: present a structured plan and wait for approval. Single-line
   fixes and typo corrections can skip this.
+- **Remote hosts are read-only, except the machine's dev hosts.** On any other
+  host, by any route (ssh, scp/rsync, `aws ssm`), read configs and logs only;
+  running, deploying, writing, starting or stopping anything needs my explicit
+  permission for that one action. The dev hosts (named machine-locally) take
+  anything. The machine-local `ssh-hosts` skill, where present, maps the hosts.
 - **Guards are rules, not obstacles.** Hooks in `~/.codex/hooks/` enforce
   the rules above (plus no `--no-verify`, no secrets in commits, and exact-operation approval
   before loosening lint config or touching risk/production config). When one

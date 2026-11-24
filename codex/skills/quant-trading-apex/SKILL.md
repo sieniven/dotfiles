@@ -37,7 +37,8 @@ per-second send quota is counted against, and one seat trades several
 clients. The libraries are Linux x86-64 ELF against glibc and GNU libstdc++,
 so on a Mac everything that loads them runs in the `linux/amd64` container,
 emulated on Apple silicon — fine for "does it work", worthless for "how
-fast". Two data centres in Singapore, Equinix SG3 primary and Singtel KC2 for
+fast". Natively, they load on a Linux x86-64 dev box: where this machine has
+one, the machine-local `ssh-hosts` skill names it and its APEX steps. Two data centres in Singapore, Equinix SG3 primary and Singtel KC2 for
 DR; production has four name servers, two primary and two DR.
 
 ## Middleware integration, as built

@@ -98,7 +98,9 @@ most one read, the decode to 64 messages or 1 024 records, at most eight
 subscribes, the unheard books aged, the word stored on its edge, the
 heartbeat, at most one write. Where `market_data.core` is named it is pinned
 there and busy-spins (required under a dedicated profile, refused under the
-shared one, and a core two entries name is refused), otherwise it idles
+shared one, and a core two entries name is refused; pinning is Linux-only,
+so a pinned document is verified on a Linux dev box, the machine-local
+`ssh-hosts` skill's, never on the Mac), otherwise it idles
 under a 50 µs backoff; a `GapMarker` in its guard gaps every book if it ends
 unasked, and its death is `Fatal` until a process restart. One HTTP side
 thread (`<instance>-<source>-http`) serves the position poll and the

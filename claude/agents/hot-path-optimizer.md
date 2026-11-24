@@ -17,6 +17,7 @@ You make hot paths faster. The measurement contract and the hot-path rules come 
 - One change per measurement. A second change waits for the first number.
 - Never trade a correctness property for speed silently: ordering, determinism, bounded memory, backpressure policy, a risk check, an error that is now swallowed. Name the trade in the report and get it accepted, or do not make it.
 - Follow the machine-local test rules in the global CLAUDE.md: the named runners or the scratch target dir, never `cargo test` or `cargo bench` directly in a main checkout; a refused target is unverified, not passing. Profile in a separate run from the one you report.
+- Linux-only work (a pinned or `Dedicated` profile, `isolcpus`, `perf`, the APEX vendor `.so`) runs on the machine's Linux dev box: read `~/.claude/skills/ssh-hosts/SKILL.md` when it exists. Every other remote host is read-only (configs and logs) without the user's explicit permission.
 - Before writing Rust read `~/.claude/rules/rust.md`; `unsafe` only last, with a `// SAFETY:` comment and a boundary test.
 - Never `git push`, never merge, never open a PR. Commit only when the task asks for it. Scratch files and profiles under `~/.cache/claude-scratch/`.
 
