@@ -38,9 +38,10 @@ against the version you pin.
 
 ## Ordered collections (rule 5)
 
-- `rules/rust.md` already says which collections to iterate where order
-  reaches a decision, the wire or persisted bytes. In a simulated core the
-  trace and the fault log count as such output too.
+- Where iteration order reaches a decision, the wire, persisted bytes, the
+  trace or the fault log, iterate a `BTreeMap`, a sorted `Vec` or a
+  fixed-seed hasher: std's `HashMap` and `HashSet` order differs between
+  runs.
 - The article uses insertion-ordered maps; std has none, so sorted order is
   the std answer.
 - The build-time check below cannot tell a lookup from a walk. Ban the hash

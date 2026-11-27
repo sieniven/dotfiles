@@ -43,9 +43,6 @@ else is cold and stays simple.
   scoped task, or a handle kept for shutdown, with `tokio::select!` and a
   cancellation branch for concurrent work. A `tokio::spawn` whose
   `JoinHandle` is dropped loses its panic and its error.
-- Independent awaits run concurrently (`tokio::join!`, `try_join!`, a
-  `JoinSet`), not one after another; sequential `.await`s are for work that
-  needs the previous result.
 
 ## Channels, locks and sharing
 
@@ -59,9 +56,6 @@ else is cold and stays simple.
   and never call unknown code (a callback, a trait method) under one. Never
   reach into a poisoned mutex with `into_inner()`: poison means an invariant
   may be broken, so propagate or restart.
-- Every retry, reconnect and polling loop has a cap and says what happens at
-  the cap, the way a full channel does; a loop meant never to end is an event
-  loop and says so.
 
 ## Allocation and the hot path
 
@@ -79,11 +73,6 @@ else is cold and stays simple.
   (`checked_add`, a lookup miss); `Result` when the caller must tell failure
   modes apart (I/O, a venue reply, parsing); a panic only for a bug — a
   violated invariant the caller must fix — never for runtime input.
-- Three failures, never mixed: a broken invariant of ours panics; wrong
-  external input (venue, peer, file, config, user) is a typed error naming
-  what was wrong; local exhaustion (a full queue, a reached cap) is a typed
-  error or backpressure the caller sees. Never assert on external input, and
-  never hide any of the three behind truncation, clamping or a default.
 - No `unwrap`/`expect`/`panic!`/`unreachable!` on a production path for
   anything that can fail on input: propagate with `?` and handle the error
   where something can act on it. Where the type system cannot express an
@@ -108,18 +97,6 @@ else is cold and stays simple.
 - Newtypes for values that are easy to swap or carry a unit: `Price` vs
   `Qty`, `OrderId` vs `ClientOrderId`, venue symbol vs internal instrument. A
   type alias only abbreviates; it adds no safety.
-- Model a lifecycle (an order, a session, a connection) as one enum whose
-  variants carry only what that phase has, so a state that cannot happen does
-  not compile.
-- A quantity with a wire, disk or venue meaning has a fixed width (`u32`,
-  `u64`, `i64`); `usize` is for lengths and indexes in memory, converted with
-  `try_from` at the boundary.
-- Where iteration order reaches a decision, the wire or persisted bytes,
-  iterate a `BTreeMap`, a sorted `Vec` or a fixed-seed hasher: `HashMap` and
-  `HashSet` order differs between runs.
-- Walk input-shaped data (JSON, a message tree, a path from the wire)
-  iteratively or with an explicit depth bound that returns an error; input
-  never sets recursion depth.
 - Parse, don't validate: wire, config and CLI input become typed structs once,
   at the boundary; the core never sees a raw string or `serde_json::Value`.
 - Named fields over tuples and non-newtype tuple structs; `enum` over `bool`
