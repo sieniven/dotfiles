@@ -41,16 +41,17 @@ desk's own measurement it says so, with the host.
 | Rung | What happens | Cost to the waiter | Cost to others |
 | --- | --- | --- | --- |
 | Spin hint (`std::hint::spin_loop`) | `PAUSE` on x86-64, `ISB` on aarch64; no kernel | none: the next poll is tens of nanoseconds away | holds the core and heats the SMT sibling |
-| Yield (`thread::yield_now`) | `sched_yield`: alone on the runqueue it returns at once; with another runnable thread the caller's deadline moves one slice out | queued behind a busy neighbour for that neighbour's whole slice, milliseconds | none while the neighbour runs |
+| Yield (`thread::yield_now`) | `sched_yield`: alone on the runqueue it returns at once; with another runnable thread the caller gives up the rest of its turn | queued behind a busy neighbour for that neighbour's whole slice, milliseconds | none while the neighbour runs |
 | Timed park (`thread::sleep`, `park_timeout`) | an hrtimer and two context switches; the wake preempts whoever runs | the park plus timer slack, 50 µs by default, on every message that lands mid-park | gives the core up |
 | Blocking wait (futex, condvar, `epoll_wait`) | off the core until woken | a wake-up from another thread, a syscall the producer pays | none |
 
 - Timer slack: a thread's timed waits may fire up to its slack late, never
   early. The default is 50 µs, inherited from the creating thread and across
-  `exec`; it is not applied under a real-time policy. Set it with
-  `prctl(PR_SET_TIMERSLACK)`, `/proc/PID/timerslack_ns`, or systemd's
-  `TimerSlackNSec=` on the service. A 50 µs park with default slack is a
-  100 µs worst case.
+  `exec`; it is not applied under a real-time policy. Set it before threads
+  exist, with `prctl(PR_SET_TIMERSLACK)` on the main thread or systemd's
+  `TimerSlackNSec=` on the service; `/proc/TID/timerslack_ns` changes one
+  running task only. A 50 µs park with default slack is a 100 µs worst
+  case.
 - A yield is not a hand-off. The kernel may pick the caller again, and a
   thread that yields stays runnable, so it never lets a core idle and never
   lets the tick stop. A ladder for a shared core goes from spinning straight
@@ -139,12 +140,15 @@ The calls, their error cases and the unsafe rules for them are in
 ## Real-time priority
 
 `SCHED_OTHER` on an isolated core with nothing else runnable is the default,
-and it is enough when isolation holds. `SCHED_FIFO` on a spinner starves the
-per-CPU kernel threads of that core, runs into real-time throttling (950 ms
-of every second by default), and is a symptom treatment for a core that is
-not quiet. Reach for it only after `os-jitter-diagnosis` names a kernel
-thread that preempts the loop and isolation cannot remove it, and put the
-change to the user as a decision.
+and it is enough when isolation holds. `SCHED_FIFO` on a spinner holds back
+the per-CPU kernel threads of that core, and the kernel then makes room for
+them itself: through v6.11 by throttling real-time tasks to 950 ms of every
+second, from v6.12 by a fair server that gives runnable normal tasks up to
+50 ms a second. Either way the spinner is stopped for them, and the
+priority is a symptom treatment for a core that is not quiet. Reach for it
+only after `os-jitter-diagnosis` names a kernel thread that preempts the
+loop and isolation cannot remove it, and put the change to the user as a
+decision.
 
 ## Shutdown, faults and signals
 
@@ -169,13 +173,17 @@ back), `process_cores` and `isolated_cores`.
   busy-spinning, and each connectivity thread on the core its source names.
   A core named once is that thread's and it spins; a core named more than
   once is time-shared and every thread on it backs off.
-- The default ladder is 10 spins, 20 yields, parks from 1 µs to 1 ms. A
-  duty's ladder is 10 spins, no yields, parks from 1 µs to 50 µs, because
-  that park is what an outbound order waits through.
-- Recorded on a 4 vCPU cloud VM (`docs/BENCHMARKS.md`, "A cancel reaching a
+- The default ladder, the unpinned engine thread's under `shared`, is 10
+  spins, 20 yields, parks from 1 µs to 1 ms. A duty's ladder is 10 spins,
+  no yields, parks from 1 µs to 50 µs, because that park is what an
+  outbound order waits through. Only the unpinned thread keeps a yield
+  rung.
+- Recorded on 4 vCPU cloud VMs (`docs/BENCHMARKS.md`, "A cancel reaching a
   quiet duty"): a cancel reaches a spinning duty in 0.15 µs at the median;
   a duty on the backoff in 54 µs (p99 108 µs); the same with 1 ns timer
-  slack in 30 µs (p99 59 µs); beside one spinning thread in about 1.1 ms.
+  slack in 30 µs (p99 59 µs). Beside one spinning thread it takes about
+  1.1 ms on a ladder with a yield rung, and on the duty's own ladder, on a
+  second VM, 64 µs at the median with 3.1 ms at p99.
   The node sets no slack, locks no memory and sets no socket busy-poll
   option today.
 - Each source has its own thread; a composite runner over several agents

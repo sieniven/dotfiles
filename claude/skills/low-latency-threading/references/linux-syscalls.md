@@ -31,19 +31,26 @@ man page of the target system before relying on it.
 - `prctl(PR_SET_TIMERSLACK, ns)` sets the calling thread's current slack;
   0 restores its default. New threads copy the creator's current value, so
   one call on the main thread before any spawn covers the process.
-- The same value is readable and writable at `/proc/PID/timerslack_ns`,
-  and a service can be started with systemd's `TimerSlackNSec=`.
+- `/proc/TID/timerslack_ns` reads or sets one task; under `/proc/PID` it is
+  the main thread alone, and threads already running keep their own value.
+  A service started with systemd's `TimerSlackNSec=` has it in every
+  thread.
 - Not applied to threads under a real-time policy.
 
 ## Scheduling policy
 
 - `sched_setscheduler` with `SCHED_FIFO` needs `CAP_SYS_NICE` or an
   `RLIMIT_RTPRIO` allowance (systemd: `LimitRTPRIO=`).
-- Real-time runtime is capped by `kernel.sched_rt_runtime_us` out of
-  `kernel.sched_rt_period_us` (950 000 of 1 000 000 µs by default). A
-  spinning real-time thread meets the cap every second.
-- A real-time spinner never lets the per-CPU kernel threads of its core
-  run. Whatever they were queued to do waits.
+- Through v6.11, real-time tasks are throttled to
+  `kernel.sched_rt_runtime_us` out of `kernel.sched_rt_period_us` (950 000
+  of 1 000 000 µs by default): a spinning real-time thread is stopped for
+  50 ms of every second.
+- From v6.12, unless the kernel is built with `CONFIG_RT_GROUP_SCHED`, a
+  fair server instead gives runnable normal tasks, the core's kernel
+  workers included, up to 50 ms a second. A real-time spinner is preempted
+  whenever such work is queued, and not otherwise.
+- Either way the per-CPU kernel threads of that core wait behind the
+  spinner, for up to a second, to do what they were queued to do.
 
 ## Memory
 
@@ -51,8 +58,11 @@ man page of the target system before relying on it.
   be; without `MCL_ONFAULT` it also faults the current mappings in. Needs
   `CAP_IPC_LOCK` or an `RLIMIT_MEMLOCK` that covers the process (systemd:
   `LimitMEMLOCK=`).
-- Locking does not touch memory mapped later until it is written: pre-fault
-  buffers, rings and each thread's stack by writing them once.
+- With `MCL_FUTURE` and without `MCL_ONFAULT`, memory mapped later is
+  faulted in as it is mapped: an `mmap`, heap growth, and the whole stack
+  of every thread spawned afterwards, which is resident memory per thread.
+  Under `MCL_ONFAULT`, or without locking, pre-fault buffers, rings and
+  each thread's stack by writing them once.
 - Details and huge pages: `cpu-cache-and-memory-layout`, the pages
   reference.
 
@@ -62,8 +72,9 @@ A thread's kernel name (`comm`) holds 15 bytes. Rust's
 `thread::Builder::name` truncates a longer name and glibc's
 `pthread_setname_np` refuses it, so tools that find a thread by name (a
 host check that looks for `engine`) depend on names that fit and stay
-distinct in their first 15 bytes. Name every thread; an unnamed one shows
-the process name.
+distinct in their first 15 bytes. Name every thread: an unnamed one keeps
+its creator's name, so a helper the `engine` thread starts unnamed reads
+`engine` too.
 
 ## Signals
 

@@ -32,11 +32,13 @@ work, and only by work: a turn that polled and found nothing escalates.
   clock when the duration matters.
 - **Yield.** `sched_yield` takes the runqueue lock, calls the class's yield
   hook and schedules. For the fair class, with one runnable task it returns
-  at once; otherwise it pushes the caller's deadline one slice out, so
-  every other runnable task on that core is preferred until the caller's
-  turn comes round (`yield_task_fair`, v6.18). The kernel's own comment
-  says never to use yield as a progress guarantee. Under `SCHED_FIFO` a
-  yield only lets equal-priority tasks run.
+  at once. Otherwise the caller gives up its turn: through v6.18 its
+  deadline moves one slice out, and from v6.19 a caller that is still
+  eligible also forfeits the rest of its slice. Either way a neighbour
+  that keeps running is picked ahead of it, for about that neighbour's
+  slice (`yield_task_fair`). The kernel's own comment says never to use
+  yield as a progress guarantee. Under `SCHED_FIFO` a yield only lets
+  equal-priority tasks run.
 - **Park.** `thread::sleep` and `park_timeout` arm an hrtimer. The timer
   may fire late by up to the thread's slack; the wake-up makes the sleeper
   runnable with an early deadline, which normally preempts a thread that

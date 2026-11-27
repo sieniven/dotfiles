@@ -25,16 +25,19 @@ when none is given:
 
 Giving any flag turns the default off: `isolcpus=managed_irq,7` does not
 isolate CPU 7 from the scheduler. Tagged "[Deprecated - use cpusets
-instead]" from v6.8 through v6.18; mainline removed the tag and points to
-`Documentation/admin-guide/cpu-isolation.rst` for the choice.
+instead]" at every release read, through v7.1; v7.2 removed the tag and
+points to `Documentation/admin-guide/cpu-isolation.rst`, new in v7.1, for
+the choice.
 
 ## nohz_full=<cpu-list>
 
-`kernel-parameters.txt`, `Documentation/timers/no_hz.rst`, and in mainline
+`kernel-parameters.txt`, `Documentation/timers/no_hz.rst`, and from v7.1
 `Documentation/admin-guide/cpu-isolation.rst`. All versions read:
 
 - Needs `CONFIG_NO_HZ_FULL=y`; without it the parameter is ignored.
-- The boot CPU is forced out of the list to keep timekeeping.
+- The boot CPU is forced out of the list to keep timekeeping, in the
+  documentation's words; the code does it on a kernel built for suspend,
+  which the usual x86 build is.
 - CPUs in the list have their RCU callbacks offloaded as if named in
   `rcu_nocbs=`.
 - The tick stops only while one task is runnable on the CPU. With several,
@@ -44,7 +47,7 @@ instead]" from v6.8 through v6.18; mainline removed the tag and points to
   and scheduler statistics are computed slightly differently.
 - A 1 Hz residual tick is run on a housekeeping CPU on the isolated one's
   behalf.
-- Mainline's guide adds the constraints in so many words: a single task,
+- The v7.1 guide adds the constraints in so many words: a single task,
   no calls to the kernel from the isolated CPU, no POSIX CPU timers, a
   clocksource that needs no watchdog.
 
@@ -96,8 +99,11 @@ sets its own, and not a managed interrupt.
   good.
 - `nosmt` disables SMT at boot (the kernel's own full-isolation example
   uses it). The alternative is isolating siblings and leaving them idle.
-- `kernel.timer_migration` (sysctl): migrate timers from nohz-isolated to
-  housekeeping CPUs; on by default.
+- `kernel.timer_migration` (sysctl, on by default) is documented through
+  v7.0 as moving timers away from idle CPUs so they stay in low-power
+  states, a power knob; current mainline documents it as moving
+  high-resolution timers from tickless CPUs to housekeeping ones. Unbound
+  timers leave an isolated CPU through domain isolation at every version.
 
 ## Idle and preemption
 
@@ -105,8 +111,9 @@ sets its own, and not a managed interrupt.
   the drivers use. `idle=poll` never halts: no wake-up latency, full power
   on every idle CPU, and it takes turbo headroom from the busy ones.
   Per-CPU, runtime alternatives are in `power-and-clock.md`.
-- `preempt=none|voluntary|full|lazy` selects the preemption model on a
-  kernel built with `CONFIG_PREEMPT_DYNAMIC`. It governs when kernel code
+- `preempt=none|voluntary|full|lazy` (`lazy` from v6.13) selects the
+  preemption model on a kernel built with `CONFIG_PREEMPT_DYNAMIC`. It
+  governs when kernel code
   can be preempted; it does not change what runs on an isolated core.
 - `threadirqs` forces interrupt handlers into threads, which then have a
   priority and an affinity like any thread.
@@ -118,7 +125,7 @@ sets its own, and not a managed interrupt.
 | `/proc/cmdline` | what this boot was given |
 | `/sys/devices/system/cpu/isolated` | CPUs out of load balancing (`isolcpus=` domain) |
 | `/sys/devices/system/cpu/nohz_full` | CPUs in full-dynticks mode |
-| `/sys/devices/system/cpu/housekeeping` | the housekeeping set; present only on kernels from late 2025 on |
+| `/sys/devices/system/cpu/housekeeping` | the housekeeping set; from v6.19 |
 | `/boot/config-$(uname -r)` | whether the features were built |
 | `/proc/sys/kernel/watchdog_cpumask` | where the watchdog runs |
 

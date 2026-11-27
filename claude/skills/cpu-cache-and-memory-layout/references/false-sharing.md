@@ -28,7 +28,8 @@ is the line.
   (HITM), with the offsets within the line and the code that touched
   each. Two offsets written from two threads on one line is the
   signature. It relies on precise memory sampling: load-latency and
-  precise-store events on Intel, IBS on AMD (not available on Zen 3), SPE
+  precise-store events on Intel, IBS on AMD (the tool is not supported on
+  Zen 3), SPE
   on Arm with kernel support. In most guests that sampling is not
   exposed.
 - **Without it**: move the suspect field onto its own padded line and

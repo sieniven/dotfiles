@@ -10,21 +10,23 @@ asks for it.
 ```sh
 # Each thread of a process: id, last CPU, mask, switches, name.
 for t in /proc/$PID/task/*; do
-  printf '%s cpu=%s %s %s\n' "${t##*/}" "$(awk '{print $39}' $t/stat)" \
-    "$(grep -E 'Cpus_allowed_list|ctxt' $t/status | paste -sd' ')" "$(cat $t/comm)"
+  stat=$(<$t/stat); set -- ${stat##*) }      # what follows the name: $37 is field 39
+  printf '%s cpu=%s %s %s\n' "${t##*/}" "${37}" \
+    "$(grep -E 'Cpus_allowed_list|ctxt' $t/status | paste -sd' ')" "$(<$t/comm)"
 done
 ```
 
-Field 39 of `stat` is counted after the command name, which may itself
-contain spaces and parentheses: parse from the last `)`.
+Field 39 of `stat` is the last CPU. The command name before it may contain
+spaces and parentheses, so the loop cuts at the last `)` before counting.
 
 ```sh
 cat /proc/$PID/task/$TID/schedstat      # on-CPU ns, waited ns, timeslices
 ```
 
 The first field lags on a tickless core while one task runs there; take
-on-CPU time from `stat`'s tick counts instead. Zeros in the second and
-third mean the kernel keeps no scheduler statistics.
+on-CPU time from `stat`'s tick counts instead. The file exists only on a
+kernel built with `CONFIG_SCHED_INFO`; zeros from a sandbox are not a
+measurement.
 
 ```sh
 # Interrupts on core 2 over ten seconds: field 4 is CPU 2's column.
@@ -33,8 +35,9 @@ b=$(awk 'NR>1{print $1,$4}' /proc/interrupts)
 diff <(echo "$a") <(echo "$b")
 ```
 
-The column for CPU *n* is field *n*+2; rows shorter than the CPU count
-(`ERR`, `MIS`) are totals. A container may mask the file.
+The header names each column's CPU; CPU *n* is field *n*+2 only while
+every lower-numbered CPU is online. Rows shorter than the CPU count (`ERR`,
+`MIS`) are totals. A container may mask the file.
 
 ## Counting with perf
 

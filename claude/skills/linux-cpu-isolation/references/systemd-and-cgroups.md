@@ -34,10 +34,11 @@ the node's own configuration cannot drift from what the node pins.
 - A cpuset anywhere above the unit applies to it. `systemctl show -p
   AllowedCPUs -p EffectiveCPUs <unit>` and the unit's
   `cpuset.cpus.effective` file tell what it has.
-- systemd owns the cgroup tree. A cpuset or an isolated partition made by
-  hand under `/sys/fs/cgroup` can be overridden by it; make one inside a
-  subtree delegated for the purpose, and read `cpuset.cpus.partition` back
-  for `isolated` rather than `isolated invalid (...)`.
+- systemd owns the cgroup tree, and `cpuset.cpus.partition` belongs to the
+  parent cgroup and cannot be delegated: an isolated partition takes root's
+  writes along the whole path, which systemd may later rewrite. Read
+  `cpuset.cpus.partition` back for `isolated` rather than
+  `isolated invalid (...)`.
 - Containers get a cpuset and often a CPU quota. A quota throttles a
   spinning thread for the rest of each period: a pinned node runs with no
   quota.
@@ -82,6 +83,6 @@ allocates. Give a pinned node no memory limit it can reach.
 ```sh
 systemctl show -p CPUAffinity -p AllowedCPUs -p TimerSlackNSec -p LimitMEMLOCK <unit>
 grep -E 'Cpus_allowed_list|voluntary' /proc/<pid>/status
-cat /proc/<pid>/timerslack_ns
+for t in /proc/<pid>/task/*; do cat /proc/${t##*/}/timerslack_ns; done   # per thread
 cat /sys/fs/cgroup/<unit's path>/cpuset.cpus.effective
 ```

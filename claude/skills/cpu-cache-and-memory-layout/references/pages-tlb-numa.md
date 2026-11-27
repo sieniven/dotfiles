@@ -19,13 +19,16 @@ starts.
 Before the loop starts:
 
 1. Allocate everything the loop will use, at its final size.
-2. `mlockall(MCL_CURRENT | MCL_FUTURE)`: nothing is swapped or reclaimed,
-   and without `MCL_ONFAULT` current mappings are faulted in by the call.
-3. Write every page of every buffer, ring and arena that was allocated
-   after the lock or might not be populated; reading is not enough for
-   anonymous memory. `MAP_POPULATE` does it at `mmap` time.
-4. Touch each pinned thread's stack to the depth it will use, from that
-   thread.
+2. `mlockall(MCL_CURRENT | MCL_FUTURE)`: nothing is swapped or reclaimed.
+   Without `MCL_ONFAULT` the call faults current mappings in, and every
+   later mapping is faulted in as it is made: an `mmap`, heap growth, a
+   new thread's whole stack.
+3. Under `MCL_ONFAULT`, or without locking, write every page of every
+   buffer, ring and arena; reading is not enough for anonymous memory.
+   `MAP_POPULATE` does it at `mmap` time.
+4. With locking on, a thread's stack is resident in full from its spawn:
+   size stacks on purpose. Without it, touch each pinned thread's stack to
+   the depth it will use, from that thread.
 5. Never free or shrink afterwards: an allocator that returns memory to
    the kernel unmaps it, which shoots down the TLB on every core running
    the process and faults on reuse.
@@ -84,7 +87,7 @@ before and after, and the latency they explain.
 - So: pin first, then allocate and touch from the pinned thread, or bind
   the allocation explicitly.
 - Automatic NUMA balancing (`kernel.numa_balancing`) samples access by
-  unmapping pages so that touches fault, and migrates pages toward their
+  making pages inaccessible so that touches fault, and migrates pages toward their
   users. For a pinned process whose memory is already placed it is pure
   noise: faults and TLB flushes. Turn it off for the host or exclude the
   process.

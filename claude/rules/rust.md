@@ -46,8 +46,8 @@ else is cold and stays simple.
 - A latency-critical loop is an OS thread, not a task: one bounded,
   non-blocking turn, an idle strategy fed the turn's work count, and a stop
   flag checked every turn (`low-latency-threading`).
-- A thread that busy-spins is pinned and alone on its core. A thread that
-  shares a core parks when idle, and its ladder has no yield rung:
+- A thread that busy-spins is pinned and alone on its core. A thread pinned
+  to a core it shares parks when idle, and its ladder has no yield rung:
   `yield_now` beside a busy thread waits out that thread's scheduler slice.
 - A thread spawned from a pinned thread inherits its core: a helper sets a
   mask of its own before it runs. A pin that fails is an error that stops

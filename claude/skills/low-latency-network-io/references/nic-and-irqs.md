@@ -82,7 +82,9 @@ interrupt that processes its traffic; keep the vCPUs that take ENA
 interrupts free of unrelated load; disable interrupt moderation. It also
 notes that receive moderation defaults differ by instance type (off on
 some, adaptive on others), that the queue count is set with
-`ethtool -L`, and that an interface supports up to 32 queues.
+`ethtool -L`, and that an interface offers the smaller of its vCPU count
+and its maximum, 8 on most instance types and up to 32 on
+network-accelerated ones.
 
 Its third point is design C and conflicts with moving every interrupt
 away; say which design a host follows.

@@ -84,7 +84,7 @@ queue from its own core.
 - Works only for a socket fed by a NIC queue (it needs a NAPI id; read it
   with `SO_INCOMING_NAPI_ID`). Loopback and Unix sockets have none: the
   option does nothing there.
-- `SO_BUSY_POLL` itself needs no privilege at v6.18.
+- `SO_BUSY_POLL` itself needs no privilege from v6.4 on.
   `SO_PREFER_BUSY_POLL` and a larger `SO_BUSY_POLL_BUDGET` need
   `CAP_NET_ADMIN`.
 - `net.core.busy_read` sets the default for every socket on the host;

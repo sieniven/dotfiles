@@ -89,9 +89,9 @@ the user, never made on reading alone.
 - It does not stop the tick and does not move managed interrupts. At every
   version read, a tickless core needs `nohz_full=` on the command line and
   a reboot.
-- Through v6.18 the `isolcpus` entry carried "Deprecated - use cpusets
-  instead". Mainline has dropped the tag and documents both: cpusets where
-  runtime change is wanted, the boot parameter where it is not. CPUs
+- Through v7.1 the `isolcpus` entry carried "Deprecated - use cpusets
+  instead". v7.2 dropped the tag and documents both: cpusets where runtime
+  change is wanted, the boot parameter where it is not. CPUs
   isolated with `isolcpus` can only be used in an isolated partition.
 - `tuned`'s `cpu-partitioning` profile is a cross-check of the full set: it
   writes `nohz_full=` and `rcu_nocbs=` for the isolated cores, restricts
@@ -128,7 +128,7 @@ the user, never made on reading alone.
 | Per-CPU kernel threads (`ksoftirqd/N`, `kworker/N:*`, `migration/N`) | stay, and sleep unless work is queued on that CPU | remove the cause: interrupts, softirqs, syscalls that queue per-CPU work |
 | vmstat update | deferred on a tickless core | `vm.stat_interval` |
 | Lockup watchdogs | `nohz_full` cores are excluded by default | `kernel.watchdog_cpumask`, `nosoftlockup`, `nowatchdog` |
-| Timers | migrate to housekeeping | `kernel.timer_migration` |
+| Timers | unbound ones leave with domain isolation; one armed from the core fires there | arm none from the core |
 | Writeback | a workqueue with its own mask | `/sys/bus/workqueue/devices/writeback/cpumask` |
 | Huge-page daemon, compaction, KSM, automatic NUMA balancing | cause faults and TLB-shootdown IPIs in the process | `transparent_hugepage`, `kernel.numa_balancing`, KSM off |
 | Machine-check polling | a timer per CPU | `machinecheck*/ignore_ce` (accepting the lost reports) |

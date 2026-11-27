@@ -50,7 +50,7 @@ its own. `perf stat` counting is light; sampling is not.
 ```sh
 perf c2c record -t $TID -- sleep 10      # or: perf c2c record -- <cmd>
 perf c2c report --stdio
-perf mem record -- <cmd> && perf mem report --sort=mem,symbol
+perf mem record -- <cmd> && perf mem report --sort=mem,symbol_daddr
 ```
 
 - `perf c2c report` lists cache lines by HITM count, local and remote,

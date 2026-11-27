@@ -21,8 +21,8 @@ Read the host's own topology and measure before quoting one.
 | --- | --- | --- | --- |
 | L1 data, L1 instruction | one core (both SMT threads) | 32 to 48 KiB each | 1 ns |
 | L2 | one core (both SMT threads) | 1 to 2 MiB | 3 to 5 ns |
-| L3, the last level | a group of cores: a socket, or a cluster within it | megabytes per core | 10 to 20 ns |
-| Memory | the NUMA node | | 60 to 100 ns, more across nodes |
+| L3, the last level | a group of cores: a socket, or a cluster within it | megabytes per core | 10 to 40 ns |
+| Memory | the NUMA node | | 60 to 130 ns, more across nodes |
 | A line another core holds modified | | | an L3 miss or worse: it is fetched from that core |
 
 - A hot path's working set (code, the structures it touches per message,

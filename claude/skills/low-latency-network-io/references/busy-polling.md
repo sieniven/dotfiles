@@ -24,17 +24,17 @@ interrupt fires anyway and busy polling merely sometimes gets there first.
 | --- | --- | --- |
 | `SO_BUSY_POLL` (socket option, microseconds) | a read or poll on this socket busy-polls its NAPI queue when the socket queue is empty | long-standing; needs `CONFIG_NET_RX_BUSY_POLL` |
 | `net.core.busy_read` (sysctl) | the default `SO_BUSY_POLL` for every socket | long-standing |
-| `net.core.busy_poll` (sysctl) | busy-poll time for `poll`, `select` and `epoll_wait` on sockets that have `SO_BUSY_POLL` | long-standing |
+| `net.core.busy_poll` (sysctl) | busy-poll time for `poll` and `select` on sockets that have `SO_BUSY_POLL`, and for every `epoll_wait` on the host whatever its sockets set | long-standing |
 | `SO_PREFER_BUSY_POLL` | the application promises to keep polling; the driver keeps the interrupt masked until `gro_flush_timeout` passes without a poll | 5.11 |
 | `SO_BUSY_POLL_BUDGET` | packets per busy poll | 5.11 |
-| `napi_defer_hard_irqs`, `gro_flush_timeout` (per device in sysfs; per NAPI by netlink on recent kernels) | how many empty polls to wait, and for how long, before re-enabling the interrupt | 5.x |
+| `napi_defer_hard_irqs`, `gro_flush_timeout` (per device in sysfs; per NAPI by netlink on recent kernels) | how many empty polls to wait, and for how long, before re-enabling the interrupt | `napi_defer_hard_irqs` 5.8; `gro_flush_timeout` long-standing |
 | `EPIOCSPARAMS` on an epoll descriptor | per-epoll busy-poll time, budget and prefer flag | 6.9 (absent from the v6.8 headers) |
 | `irq-suspend-timeout` (per NAPI, netlink) | interrupts stay masked while `epoll_wait` keeps returning events | 6.13 (absent at v6.12) |
 | Threaded NAPI (`/sys/class/net/<dev>/threaded`) | NAPI polls run in `napi/<dev>-<id>` kernel threads that can be pinned | 5.12 |
-| Threaded NAPI busy poll (netlink `"threaded": "busy-poll"`) | a kernel thread polls one queue continuously | recent mainline; absent at v6.12 |
+| Threaded NAPI busy poll (netlink `"threaded": "busy-poll"`) | a kernel thread polls one queue continuously | 7.0 (absent at v6.18) |
 
-"Since" entries for the 5.x rows are from memory; the 6.x rows were checked
-against the tree. Confirm on the target kernel before depending on one.
+The entries were checked against the tree's sources and headers at the
+versions named. Confirm on the target kernel before depending on one.
 
 ## What a read does
 
@@ -49,8 +49,8 @@ turns that read into "process my queue, then tell me what arrived".
 
 ## Privilege
 
-- `SO_BUSY_POLL`: none at v6.18 (older kernels required `CAP_NET_ADMIN`
-  to raise it).
+- `SO_BUSY_POLL`: none from v6.4 on; before that, raising it took
+  `CAP_NET_ADMIN`.
 - `SO_PREFER_BUSY_POLL`, and raising `SO_BUSY_POLL_BUDGET`:
   `CAP_NET_ADMIN`.
 - The device settings and sysctls: root.
