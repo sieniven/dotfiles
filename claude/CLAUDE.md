@@ -77,9 +77,8 @@ perp-DEX order books. Each subdirectory groups independent git repos, named
   never end a turn on "waiting for background agents". If you delegate, you collect
   — wait for every child, integrate the results, then report. Delegate only work
   that does not fit one context; don't re-split a task already sized for one agent.
-- **`NEEDS:` in a subagent report is a debt.** A line `NEEDS: <agent> — <scope>`
-  means that agent must run on that scope before the work is accepted: subagents
-  cannot spawn their own reviewer, so the session that delegated does.
+- **`NEEDS: <agent> — <scope>` in a subagent report**: run that agent on that
+  scope before accepting the work.
 - **Loops need a machine-decidable goal.** Before starting one, name the check that
   ends it (a test, a metric threshold, an empty work-list), make sure the loop
   cannot edit that check, and set a max iteration count. Stop and report when two
@@ -135,12 +134,8 @@ strategy and monitor repos that trade on them today, `quant-trading-apex` or
   same domain: `embedded-storage`, `sql-databases`, `evm-contracts`,
   `solana-programs`, `onchain-execution`, `venue-protocols`,
   `market-data-pipelines`, `prometheus-observability`, `systems-benchmarking`.
-- In any repo: `tigerstyle` only for a direct code conversion or port (existing
-  code translated to another language, or a component or dependency
-  reimplemented), never for ordinary feature, fix or review work;
-  `deterministic-simulation-testing` when building or extending a simulator, or
-  testing stateful, concurrent or venue-facing logic under faults. Neither is
-  preloaded by an agent.
+- `tigerstyle` only for direct code conversions and ports;
+  `deterministic-simulation-testing` for simulators and fault testing.
 
 ## Harness maintenance
 
