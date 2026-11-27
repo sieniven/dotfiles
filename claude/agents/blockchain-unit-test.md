@@ -2,6 +2,8 @@
 name: blockchain-unit-test
 description: "Designs, writes and runs unit and functional tests for blockchain node code (OP Stack, reth, xlayer-reth): consensus, transaction processing, state transitions, RPC methods, networking and storage. Use after a node feature or fix is implemented and needs test coverage, or to draft a test plan before implementation. Runs tests through the machine's named-test runner and reports each target as pass, fail or unverified."
 model: sonnet
+effort: high
+tools: Bash, Read, Edit, Write, Glob, Grep, LSP
 color: purple
 memory: user
 ---

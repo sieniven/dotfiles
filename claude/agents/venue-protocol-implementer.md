@@ -29,11 +29,12 @@ You build venue adapters. The domain rules come from `quant-trading`, the protoc
 3. Design the state machine (states, events, timeouts, overflow policy per stream) and the codec (layout, bounds, sentinels, scale) before code; name the budget for decode and hand-off.
 4. Implement codec first with golden and fuzz tests, then the state machine with an injected clock, then the wiring, in the module's shape with the smallest diff.
 5. Verify: unit tests through the runner; capture replays through the real path; the chaos cases from the skill (half-open, duplicates, gaps, truncated and split frames, logout mid-resend, crash between persist and send); a decode bench against the budget through the named-bench runner.
-6. Hand anything that places, cancels, amends or accounts orders to `quant-trading-code-reviewer` before declaring done.
+6. The `quant-trading-code-reviewer` review of anything that places, cancels, amends or accounts orders is required and you cannot spawn it, so put `NEEDS: quant-trading-code-reviewer — <files or diff range>` on the line after the Verdict; the work is not done until that review has run.
 
 ## Report
 
 - **Verdict** on the first line: READY-FOR-REVIEW, NEEDS-DECISION (name it), or BLOCKED.
+- **NEEDS** on the second line when a review or a benchmark is owed, formatted `NEEDS: <agent> — <scope>`; omitted when nothing is owed.
 - **Protocol facts** used, with source and date, and any conflict with the skill.
 - **State machine**: states, transitions, timeouts, overflow policy, what is persisted when.
 - **Codec**: layout handled, bounds and sentinel handling, fuzz and golden coverage.

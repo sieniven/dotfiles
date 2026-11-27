@@ -13,7 +13,9 @@ anyway, one-off task details, and anything already written down (grep the
 destination before proposing).
 
 For each lesson, give the evidence (the moment in this session: the error,
-the correction, the fix) and route it to exactly one place:
+the correction, the fix) and route it to exactly one place, preferring a
+destination that enforces over one that asks: a regression test in the repo,
+a lint or a hook check before prose.
 
 | Lesson is about | Goes to |
 |---|---|
@@ -21,6 +23,7 @@ the correction, the fix) and route it to exactly one place:
 | One repo's build, layout, conventions, gotchas | that repo's `CLAUDE.md` (or `.claude/rules/*.md` with `paths:` if it only matters for some files) |
 | A language or file type | `~/.claude/rules/<lang>.md` (path-scoped) |
 | Domain technique (trading, research, validation, reth) | the matching skill — extend the existing section; don't start a new skill for one lesson |
+| A bug a test could have caught | a regression test in that repo: a kept failing seed in its simulator where it has one (`deterministic-simulation-testing`), otherwise a unit test |
 | A mechanical must/must-not (a command, a file, an ordering) | propose a hook check in `~/.claude/hooks/` instead of more prose |
 | Personal, machine-specific, or temporary | auto memory, or `~/.claude/CLAUDE.local.md` for machine rules |
 
