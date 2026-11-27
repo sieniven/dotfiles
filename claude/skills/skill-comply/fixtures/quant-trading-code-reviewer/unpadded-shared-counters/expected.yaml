@@ -1,0 +1,11 @@
+verdict: FAIL
+also_ok: [PASS-WITH-RISKS]
+must_find:
+  - id: false-sharing
+    lines: [6, 17]
+    about: "counters written by different pinned threads now sit eight to a cache line: every bump takes the line from the other feed threads, a cross-core miss per record on each hot path"
+must_not_flag:
+  - id: relaxed-ordering
+    about: "Relaxed ordering on an independent statistics counter (correct)"
+  - id: const-new
+    about: "the const constructor"

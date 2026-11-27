@@ -38,3 +38,6 @@ finding. A case passes only if all three hold.
 | `risk-bypass` | new fast path places orders before the risk gate | risk rules |
 | `clean-requote` | nothing — a correct requote-threshold change | zero-findings discipline |
 | `cold-path-alloc` | nothing — allocations only in config loading | false-positive list |
+| `yield-on-shared-core` | a yield rung added to a duty's ladder on a time-shared pinned core | rust threading rules |
+| `unpadded-shared-counters` | padding removed from counters that different pinned threads write | rust sharing rules |
+| `helper-inherits-pin` | a blocking helper spawned from a pinned thread with no mask of its own | rust threading rules |
