@@ -10,6 +10,10 @@ Route broad preferences to ~/dev/dotfiles/codex/AGENTS.md; repository knowledge
 to its native AGENTS.md; language rules to codex/rules/; domain/workflow guidance
 to codex/skills/; enforceable boundaries to codex/hooks/ with regression checks;
 machine restrictions to ignored codex/local/; open task state to a Codex handoff.
+Prefer a destination that enforces over one that asks: a hook check or lint before
+prose. A bug a test could have caught goes to a regression test in that repo, a kept
+failing seed in its simulator where it has one (see the
+`deterministic-simulation-testing` skill), otherwise a unit test.
 
 Codex has no Claude memory-writing tool or automatic per-agent memory directory.
 Never update Claude contexts, settings, skills or hooks. Avoid duplicating lessons

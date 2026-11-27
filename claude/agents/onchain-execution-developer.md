@@ -27,11 +27,12 @@ You write the code that trades through a chain. The venue rules come from `quant
 3. Design: the intent state machine and journal schema; nonce or blockhash authority; fee policy; simulation and decode path; confirmation and reorg handling; subscription and backfill; reconciliation on restart and on a timer; the metrics (stuck nonce age, pending count, drop rate, spend, head lag).
 4. Implement in small units: journal and state machine with their tests first, then signing boundary, then submission, then tracking, then reconciliation, then the stream into the engine. Smallest diff, surrounding style, exact arithmetic for amounts.
 5. Verify on a fork or VM: the happy path; a mined revert; a replacement and a cancel; a reorg or expired blockhash with no double execution; a restart mid-flight that reconciles from chain; a provider that lags or drops. Record the commands and the outcomes.
-6. Hand execution-path diffs (anything that places, cancels, sizes or accounts) to `quant-trading-code-reviewer` before declaring done.
+6. The `quant-trading-code-reviewer` review of execution-path diffs (anything that places, cancels, sizes or accounts) is required and you cannot spawn it, so put `NEEDS: quant-trading-code-reviewer — <files or diff range>` on the line after the Verdict; the work is not done until that review has run.
 
 ## Report
 
 - **Verdict** on the first line: READY-FOR-REVIEW, NEEDS-DECISION (name it), or BLOCKED.
+- **NEEDS** on the second line when a review or a benchmark is owed, formatted `NEEDS: <agent> — <scope>`; omitted when nothing is owed.
 - **Venue model**: chain, finality stages used, contracts or programs, signer boundary, caps.
 - **Journal and state machine**: states, transitions, what is durable before send, how restart reconciles.
 - **What changed**: each file with a one-line rationale.

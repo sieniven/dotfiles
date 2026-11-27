@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+"""Run every check this repo's CI runs, from the repo root, and end GREEN or RED.
+
+Steps: Claude harness lint, Claude hook tests, Codex validate, Codex hook tests.
+Uses the interpreter it was started with. Codex validate needs Python 3.11+
+(tomllib) and PyYAML; without them that step is reported SKIP, which is not a
+failure. Every step runs even after a failure. Exit 0 only on GREEN.
+"""
+import importlib.util
+import os
+import subprocess
+import sys
+import time
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PY = sys.executable
+TAIL = 30
+
+
+def validate_skip_reason():
+    if sys.version_info < (3, 11):
+        return "needs Python 3.11+ (tomllib), running %d.%d" % sys.version_info[:2]
+    if importlib.util.find_spec("yaml") is None:
+        return "PyYAML is not installed"
+    return None
+
+
+def steps():
+    return [
+        ("claude lint", [PY, "claude/scripts/lint_harness.py"], None),
+        ("claude hook tests", [PY, "-m", "unittest", "discover", "-s", "claude/hooks/tests"], None),
+        ("codex validate", [PY, "codex/scripts/validate.py"], validate_skip_reason()),
+        ("codex hook tests", [PY, "-m", "unittest", "discover", "-s", "codex/hooks/tests"], None),
+    ]
+
+
+def run_step(cmd):
+    try:
+        proc = subprocess.run(cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    except OSError as exc:
+        return 1, "could not run %s: %s" % (cmd[0], exc)
+    return proc.returncode, proc.stdout
+
+
+def main():
+    if any(a in ("-h", "--help") for a in sys.argv[1:]):
+        print(__doc__.strip())
+        return 0
+    failed = False
+    for name, cmd, skip in steps():
+        if skip:
+            print("%-18s SKIP  %s" % (name, skip), flush=True)
+            continue
+        start = time.time()
+        code, output = run_step(cmd)
+        status = "PASS" if code == 0 else "FAIL"
+        print("%-18s %s  %.1fs" % (name, status, time.time() - start), flush=True)
+        if code != 0:
+            failed = True
+            print("\n".join("    " + l for l in output.splitlines()[-TAIL:]), flush=True)
+    print("RED" if failed else "GREEN")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
