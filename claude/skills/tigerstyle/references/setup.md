@@ -1,11 +1,12 @@
-# Setting a repo up under TigerStyle
+# Setting a port's target up under TigerStyle
 
-What the setup use produces, in this order: the rules block, the gate, the
-ratchet, and limit values with a source. For a Rust repo, the lint, rustfmt
-and cargo-deny settings are in the "Enforce it" section of [rust.md](rust.md).
-Changing lint config asks first on this harness (the edit guard), and the
-global CLAUDE.md asks for a plan before multi-file changes: present the plan,
-then make the changes once the user approves.
+What the setup use produces for the target of a port (a new repo, or the crate
+or package that receives the ported code), in this order: the rules block, the
+gate, the ratchet, and limit values with a source. For a Rust repo, the lint,
+rustfmt and cargo-deny settings are in the "Enforce it" section of
+[rust.md](rust.md). Changing lint config asks first on this harness (the edit
+guard), and the global CLAUDE.md asks for a plan before multi-file changes:
+present the plan, then make the changes once the user approves.
 
 ## (a) The rules block
 
@@ -15,8 +16,8 @@ it short: the gate enforces the mechanical rules, the block states the rest.
 ```markdown
 ## TigerStyle
 
-This repo follows TigerStyle (load the `tigerstyle` skill). Safety, then
-performance, then developer experience.
+This code was ported under TigerStyle, and these rules bind in it. Safety,
+then performance, then developer experience.
 
 - Assert arguments, results and invariants; two per function on average,
   paired across boundaries, positive and negative space, with messages.
@@ -57,8 +58,9 @@ shell.
 
 ## (c) Adoption by ratchet
 
-An existing codebase will not pass on day one, and rewriting it in one change
-is the wrong change. Ratchet instead:
+A port translated in stages, or one landing beside existing code, will not
+pass on day one, and loosening a rule to get there is the wrong change.
+Ratchet instead:
 
 - For each rule no lint enforces, or one a lint enforces but the codebase
   violates today, keep one count file: `ratchet/<rule>.count` holding a

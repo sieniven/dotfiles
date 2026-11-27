@@ -135,10 +135,12 @@ strategy and monitor repos that trade on them today, `quant-trading-apex` or
   same domain: `embedded-storage`, `sql-databases`, `evm-contracts`,
   `solana-programs`, `onchain-execution`, `venue-protocols`,
   `market-data-pipelines`, `prometheus-observability`, `systems-benchmarking`.
-- In any repo: `tigerstyle` when the repo's rules or I name TigerStyle, or to set a
-  repo up under it; `deterministic-simulation-testing` when building or extending a
-  simulator, or testing stateful, concurrent or venue-facing logic under faults.
-  Neither is preloaded by an agent.
+- In any repo: `tigerstyle` only for a direct code conversion or port (existing
+  code translated to another language, or a component or dependency
+  reimplemented), never for ordinary feature, fix or review work;
+  `deterministic-simulation-testing` when building or extending a simulator, or
+  testing stateful, concurrent or venue-facing logic under faults. Neither is
+  preloaded by an agent.
 
 ## Harness maintenance
 

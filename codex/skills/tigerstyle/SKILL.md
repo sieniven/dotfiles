@@ -1,6 +1,6 @@
 ---
 name: tigerstyle
-description: TigerBeetle's TigerStyle coding discipline as an opt-in standard, language-agnostic with Rust specifics. Safety, then performance, then developer experience; assertions on arguments, results and invariants (two per function on average, paired, positive and negative space); a limit on everything; no allocation after initialisation on hot paths; 70-line functions and 100-column lines; explicit control flow with no recursion; every error handled; units-last naming; back-of-envelope sketches and batching. Covers setting a repo up under it (a rules block, a single scripts/check gate, a ratchet for existing violations, clippy, rustfmt and cargo-deny settings), reviewing a diff against it with P0 to P3 findings, and writing code under it, reconciled with the Rust and Python language rules. Use when the user says TigerStyle or tiger style, asks for a TigerStyle review or setup, or works in a repo whose AGENTS.md or CLAUDE.md adopts TigerStyle.
+description: TigerBeetle's TigerStyle coding discipline, used here only for direct code conversions and ports, where existing code is translated into another language or an existing component or dependency is reimplemented from its source. Language-agnostic with Rust specifics. Safety, then performance, then developer experience; assertions on arguments, results and invariants (two per function on average, paired); a limit on everything; no allocation after initialisation on hot paths; 70-line functions and 100-column lines; explicit control flow with no recursion; every error handled; units-last naming. Covers setting the port's target up under it (a rules block, a single scripts/check gate, a ratchet, clippy, rustfmt and cargo-deny settings), writing the ported code, and reviewing the port with P0 to P3 findings, reconciled with the Rust and Python language rules. Use only when the task is a direct code conversion or port. Do not use for ordinary feature, fix, refactor, optimisation or review work.
 ---
 
 # TigerStyle
@@ -10,26 +10,44 @@ Adapted from [fotoetienne/agent-essentials](https://github.com/fotoetienne/agent
 TigerBeetle's coding style, ported for this setup. Design goals in priority
 order: **safety, then performance, then developer experience**. Style here is
 design: a rule earns its place by making the code safer, faster or easier to
-get right, in that order. It is opt-in: apply it where the user asks for it or
-where the repo's AGENTS.md or CLAUDE.md adopts it, never as a default.
+get right, in that order.
 
-## Three uses, three references
+**Scope: direct code conversions and ports only.** Use it when existing code
+is translated into another language, or an existing component or dependency
+is reimplemented from its source. It is not the style for ordinary work: a
+new feature, a bug fix, a refactor, an optimisation or a routine review
+follows the repo's rules and the language rules, and never loads this skill.
+
+## In a port
+
+- The source is the reference for behaviour; TigerStyle governs how the
+  target is written. Port the behaviour exactly first; improvements are
+  separate changes.
+- Translate a construct that breaks a rule into the rule's form instead of
+  transliterating it: recursion becomes an explicit stack or a depth bound,
+  an unbounded loop or queue gets a named bound, an exception or panic on
+  input becomes a typed error, shared mutable state gets one owner.
+- Check parity against the source, whose outputs are the oracle: the
+  differential method is in the `deterministic-simulation-testing` skill.
+- Record every deliberate difference from the source.
+
+## Three uses within a port
 
 Read the reference for the job before acting; the core rules below are a
 shortlist, not the standard.
 
-- **Set a repo up under TigerStyle**: read
+- **Set the port's target up under TigerStyle** (a new repo, or the crate or
+  package that receives the ported code): read
   [references/setup.md](references/setup.md). It produces the rules block for
-  the repo's AGENTS.md or CLAUDE.md, the `scripts/check` gate, the ratchet for
-  violations that already exist, and where limit values come from. For a Rust
-  repo also read the "Enforce it" section of
-  [references/rust.md](references/rust.md).
-- **Review a diff against it**: walk
-  [references/review-checklist.md](references/review-checklist.md) over the
-  diff, plus [references/rust.md](references/rust.md) for Rust.
-- **Write code under it**: apply
+  the repo's AGENTS.md or CLAUDE.md, the `scripts/check` gate, the ratchet,
+  and where limit values come from. For a Rust target also read the "Enforce
+  it" section of [references/rust.md](references/rust.md).
+- **Write the ported code under it**: apply
   [references/principles.md](references/principles.md), plus
   [references/rust.md](references/rust.md) for Rust.
+- **Review the port against it**: walk
+  [references/review-checklist.md](references/review-checklist.md) over the
+  port's diff, plus [references/rust.md](references/rust.md) for Rust.
 
 A narrow question the core rules answer ("what is the function limit?") needs
 no reference.
@@ -122,8 +140,9 @@ skipped because a higher rule or the language overrides it.
 
 ## When not to use it
 
-- The repo has not opted in and the user did not ask: review against the
-  repo's rules and the language rules instead.
+- The task is not a direct code conversion or port: follow the repo's rules
+  and the language rules instead. That holds in a repo that was itself ported
+  under TigerStyle too; its own rules block carries what binds there.
 - Framework-heavy code (a web framework, an ORM, a UI) whose idioms require
   allocation, deep abstraction or callbacks: flag the conflict and the
   trade-off, do not demand a rewrite.

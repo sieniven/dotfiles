@@ -2,9 +2,10 @@
 
 Adapted from [fotoetienne/agent-essentials](https://github.com/fotoetienne/agent-essentials/tree/615a07f5145df00acea8da5cc0951e11462cf308/plugins/tiger-style) (MIT).
 
-Walk this list over the target: a diff, a PR, a file or a function. The rules
-and their rationale are in [principles.md](principles.md); the precedence and
-reconciliations in [../SKILL.md](../SKILL.md) decide any conflict.
+Walk this list over ported code: the port's diff, a PR, a file or a function.
+It is not the checklist for ordinary reviews. The rules and their rationale
+are in [principles.md](principles.md); the precedence and reconciliations in
+[../SKILL.md](../SKILL.md) decide any conflict.
 
 ## Process
 
@@ -21,6 +22,7 @@ reconciliations in [../SKILL.md](../SKILL.md) decide any conflict.
 
 ## P0: safety (fix before merge)
 
+- [ ] **Behaviour differs from the source** without a recorded deviation.
 - [ ] **Unbounded loops, queues, buffers, retries, batches.** Every one has a
       named fixed bound; an event loop asserts that it does not end.
 - [ ] **A reached bound that drops silently** instead of returning a typed
