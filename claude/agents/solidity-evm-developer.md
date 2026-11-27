@@ -29,11 +29,12 @@ You write EVM contracts. The vulnerability classes, tooling and finding schema c
 5. Tests in order: unit tests per branch with `test_RevertWhen_*` under `vm.prank(attacker)`; `testFuzz_*` on bounds and arithmetic including one wei and `type(uint).max`; `invariant_*` with handlers, `bound()`ed inputs and ghost variables; fork tests for every live integration; `forge coverage` for the gaps.
 6. Static analysis and gas: Slither, Aderyn, `slither-check-upgradeability` or `slither-check-erc` where relevant, `forge snapshot`.
 7. Deploy script in `script/`, simulated against a fork, with constructor arguments, ownership transfer, initializer call and verification spelled out. Deploy scripts are in audit scope.
-8. Self-review against the class list and the rounding rules, then ask for `sc-auditor` before declaring done.
+8. Self-review against the class list and the rounding rules, then the `sc-auditor` review is required and you cannot spawn it, so put `NEEDS: sc-auditor — <files or diff range>` on the line after the Verdict; the work is not done until that review has run.
 
 ## Report
 
 - **Verdict** on the first line: READY-FOR-AUDIT, NEEDS-DECISION (name it), or BLOCKED.
+- **NEEDS** on the second line when a review or a benchmark is owed, formatted `NEEDS: <agent> — <scope>`; omitted when nothing is owed.
 - **Threat model**: the classes that apply and how each is closed; the ones that do not and why.
 - **Admin surface**: every privileged role and power, upgradeability yes or no, pause and kill paths.
 - **What changed**: each file with a one-line rationale.

@@ -16,6 +16,12 @@ repo's. Create `~/.claude/CLAUDE.local.md` from `../CLAUDE.local.md.example`:
 while it mentions `cargo test`. Hooks, skills and commands hot-reload through
 the links, so a branch checkout here is live in every open session.
 `python3 ~/.claude/scripts/lint_harness.py` then lints the installed tree.
+`python3 claude/scripts/install.py` previews all of the above, one line per
+action, and changes nothing; `--apply` performs it. Anything in the way is moved
+to `~/.claude/backups/install-<timestamp>/`, never deleted. A `settings.json`
+that differs from the repo's is kept and shown as a diff summary; `--settings`
+replaces it, after backing the old one up. `--claude-dir PATH` targets another
+directory.
 List the machine's dev hosts, one ssh alias or address per line, in the
 untracked `~/.claude/local/ssh-dev-hosts`: `bash_guard.py`'s `remote` check
 lets anything run there and keeps every other host read-only.
@@ -78,6 +84,11 @@ its tip (`-D` only on that proof, for squash merges); an open PR keeps it. It
 also deletes the session's `CLAUDE_CLEANUP_SESSION_DIRS`, by default the
 worktree test runner's `bin/tests-<session>` and `bin/benches-<session>`
 copies. `plan` previews; the module docstring has the full rules.
+
+`../scripts/install.py` installs this directory into `~/.claude` (see Install):
+dry run by default, `--apply` to act, `--settings` to replace a differing
+`settings.json`. It is idempotent, never touches skills or files the repo does
+not provide, and never overwrites an existing `CLAUDE.local.md`.
 
 ## Tests
 

@@ -78,6 +78,8 @@ named `<group>-<name>`:
   delegate, you collect — wait for every child, integrate the results, then
   report. Delegate only work that does not fit one context; don't re-split a
   task already sized for one agent.
+- **`NEEDS: <agent> — <scope>` in a subagent report**: run that role on that
+  scope, with the usual delegation approval, before accepting the work.
 - **Loops need a machine-decidable goal.** Before starting one, name the
   check that ends it (a test, a metric threshold, an empty work-list), make
   sure the loop cannot edit that check, and set a max iteration count. Stop
@@ -154,6 +156,8 @@ adapters and the engine, strategy and monitor repos that trade on them today,
   of the same domain: `embedded-storage`, `sql-databases`, `evm-contracts`,
   `solana-programs`, `onchain-execution`, `venue-protocols`, `market-data-pipelines`,
   `prometheus-observability`, `systems-benchmarking`.
+- `tigerstyle` only for direct code conversions and ports;
+  `deterministic-simulation-testing` for simulators and fault testing.
 
 ## Harness maintenance
 

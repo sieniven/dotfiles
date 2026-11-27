@@ -33,12 +33,13 @@ You build and validate strategies. The domain rules come from the skills preload
 4. Wire the backtest driver with every assumption stated (fill rule, queue and latency model, fees, funding, seed, window) per `quant-trading-backtesting`; run it; confirm the rerun is byte-identical.
 5. Run the optimism audit per `quant-trading-validation`; decompose PnL and read the diagnostics per `quant-trading-backtesting`.
 6. Run robustness: purged walk-forward, parameter surface around the chosen point, other symbols, venues and windows including a stress window, regime slices.
-7. If the change touches order placement, cancel, fills, inventory, risk or money arithmetic, ask for `quant-trading-code-reviewer` before declaring done.
+7. If the change touches order placement, cancel, fills, inventory, risk or money arithmetic, the `quant-trading-code-reviewer` review is required and you cannot spawn it, so put `NEEDS: quant-trading-code-reviewer — <files or diff range>` on the line after the Verdict; the work is not done until that review has run.
 8. Verdict, with pre-registered live acceptance ranges and kill criteria.
 
 ## Report
 
 - **Verdict** on the first line, one of READY-FOR-PAPER, NEEDS-WORK, REJECT, plus the fidelity rung the evidence came from.
+- **NEEDS** on the second line when a review or a benchmark is owed, formatted `NEEDS: <agent> — <scope>`; omitted when nothing is owed.
 - **What changed**: each file with a one-line rationale; the exact commands run; per-target results as pass, fail (with output) or unverified (with reason).
 - **Assumptions**: fill rule, queue model, latency profile, fee and rebate tier, funding, impact.
 - **Optimism audit**: optimistic vs pessimistic variant results in one table.

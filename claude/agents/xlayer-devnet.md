@@ -2,6 +2,8 @@
 name: xlayer-devnet
 description: "Deploys, tests and debugs the X Layer local devnet (OP Stack): starting and stopping it through its Makefile, reading docker container logs, debugging op-reth / op-geth / op-node / conductor / batcher issues, checking how local code changes behave end to end, tuning devnet .env parameters, and running the ERC20 stress test. Use when a change needs end-to-end or performance validation on the devnet, or when the devnet itself misbehaves."
 model: sonnet
+effort: high
+tools: Bash, Read, Edit, Write, Glob, Grep, LSP
 color: red
 memory: user
 ---
