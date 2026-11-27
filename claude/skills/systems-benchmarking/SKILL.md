@@ -113,6 +113,10 @@ main checkout; the bash guard denies it. Use the named-bench runner instead:
   machine-local `ssh-hosts` skill), pinned and `perf` runs go there, reported
   as that box's numbers. Record kernel, CPU model, microcode, governor, compiler and
   commit with every result. A result without its environment is not a result.
+- What each of these settings does and costs is in `linux-cpu-isolation`;
+  proving a bench core was quiet during the run is `os-jitter-diagnosis`;
+  placement and idle strategies of the threads under test are
+  `low-latency-threading`.
 
 ## Variance and statistics
 

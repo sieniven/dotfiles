@@ -43,6 +43,17 @@ else is cold and stays simple.
   scoped task, or a handle kept for shutdown, with `tokio::select!` and a
   cancellation branch for concurrent work. A `tokio::spawn` whose
   `JoinHandle` is dropped loses its panic and its error.
+- A latency-critical loop is an OS thread, not a task: one bounded,
+  non-blocking turn, an idle strategy fed the turn's work count, and a stop
+  flag checked every turn (`low-latency-threading`).
+- A thread that busy-spins is pinned and alone on its core. A thread pinned
+  to a core it shares parks when idle, and its ladder has no yield rung:
+  `yield_now` beside a busy thread waits out that thread's scheduler slice.
+- A thread spawned from a pinned thread inherits its core: a helper sets a
+  mask of its own before it runs. A pin that fails is an error that stops
+  the launch, never a fall back to unpinned.
+- `thread::sleep` and `park_timeout` fire late by the thread's timer slack,
+  50 µs by default: a short park is sized with it.
 
 ## Channels, locks and sharing
 
@@ -56,6 +67,10 @@ else is cold and stays simple.
   and never call unknown code (a callback, a trait method) under one. Never
   reach into a poisoned mutex with `into_inner()`: poison means an invariant
   may be broken, so propagate or restart.
+- Two atomics written by different threads never share a cache line: pad
+  each (`CachePadded`, `#[repr(align(..))]`) and pin a shared layout with
+  size, alignment and offset assertions. `Arc::clone` on a hot path is a
+  write to a line every holder reads (`cpu-cache-and-memory-layout`).
 
 ## Allocation and the hot path
 

@@ -23,7 +23,10 @@ one thing, then measure again against the same baseline.
 4. **Contention**: `perf c2c` for false sharing; `perf sched` or bcc `runqlat`
    for scheduling delay; `perf lock` where available. A lock that is never
    contended still costs an atomic; a lock held across an `await` costs the
-   runtime.
+   runtime. Reading the counters and fixing a contended line is
+   `cpu-cache-and-memory-layout`; a wait that is a park, a slice or an
+   interruption rather than code is `low-latency-threading` and
+   `os-jitter-diagnosis`.
 5. **Syscalls and I/O**: `strace -c -f` or `perf trace` to count them; any
    syscall on the hot path is a finding (logging, time reads through the vDSO
    excepted, allocation that grows the heap).

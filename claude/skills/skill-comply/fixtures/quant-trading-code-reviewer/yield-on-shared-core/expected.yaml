@@ -1,0 +1,11 @@
+verdict: FAIL
+also_ok: [PASS-WITH-RISKS]
+must_find:
+  - id: yield-rung-shared-core
+    lines: [4, 8]
+    about: "a yield rung on a pinned, time-shared core: beside a feed thread that is busy the duty stays runnable and waits out that thread's scheduler slice, so an outbound cancel is delayed by milliseconds where the park cost tens of microseconds"
+must_not_flag:
+  - id: busy-spin-alone
+    about: "BusySpin for a duty that is alone on its core (line 13 is correct)"
+  - id: park-cap
+    about: "the unchanged 50 us park cap"

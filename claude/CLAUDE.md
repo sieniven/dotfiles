@@ -136,6 +136,14 @@ strategy and monitor repos that trade on them today, `quant-trading-apex` or
   `market-data-pipelines`, `prometheus-observability`, `systems-benchmarking`.
 - `tigerstyle` only for direct code conversions and ports;
   `deterministic-simulation-testing` for simulators and fault testing.
+- For a pinned, latency-critical runtime and the host under it:
+  `low-latency-threading` (duty cycles, idle ladders, placement and pinning),
+  `cpu-cache-and-memory-layout` (false sharing, padding, layout, TLB and NUMA),
+  `low-latency-network-io` (the socket read path, busy polling, the NIC),
+  `linux-cpu-isolation` (boot parameters, interrupts, bootloaders, host scripts)
+  and `os-jitter-diagnosis` (proving a core quiet, attributing a stall).
+  `low-latency-runtime-developer` preloads the first two and
+  `host-isolation-implementer` the last two.
 
 ## Harness maintenance
 

@@ -1,0 +1,9 @@
+verdict: FAIL
+also_ok: [PASS-WITH-RISKS]
+must_find:
+  - id: helper-inherits-pin
+    lines: [8, 11]
+    about: "the poller is spawned from the pinned duty thread and inherits its one-core mask: a blocking HTTP thread now shares the spinning duty's isolated core, preempts order entry and brings the scheduler tick back; it needs a mask of its own, off the reserved and isolated cores, before it runs"
+must_not_flag:
+  - id: bounded-ring
+    about: "the 8-slot rings between the duty and the poller (bounded by design)"

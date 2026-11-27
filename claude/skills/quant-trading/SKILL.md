@@ -34,6 +34,12 @@ promotion in `quant-trading-validation`.
   be deferred (ring buffer / async writer), never a blocking write.
 - Budget in explicit terms — memory, CPU cycles, syscalls, network round
   trips — and say which one a change spends.
+- Where a message waits between threads outweighs the code around it: a
+  parked reader costs tens of microseconds and a neighbour's scheduler
+  slice milliseconds, against nanoseconds for a spinning one. Threads,
+  idle strategies and core placement are `low-latency-threading`; cache
+  lines and layout `cpu-cache-and-memory-layout`; the socket path
+  `low-latency-network-io`; the host's cores `linux-cpu-isolation`.
 - Latency claims require measurement at percentiles (p50/p99/p999), never
   means. Tail latency is what fills against you.
 - Design for determinism from day one: same input stream → same decisions.
