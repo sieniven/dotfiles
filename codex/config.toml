@@ -46,7 +46,7 @@ description = "Edits code and runs the tests that verify the change. Use for a w
 config_file = "agents/implementer.toml"
 
 [agents."quant-trading-code-reviewer"]
-description = "Reviews changes that touch the execution path of a trading system — order placement, cancel and amend, fill and inventory accounting, risk gates, emergency stop, money arithmetic, market data ingestion, and latency-sensitive hot paths. Preloads the quant-trading and quant-trading-crypto-struct skills and reads the matching language rule for Rust or Python diffs. Use before committing such a change in any repo that has no reviewer of its own for that path. Returns PASS, FAIL, or PASS-WITH-RISKS with each risk tied to a line and a concrete failure scenario. Read-only."
+description = "Reviews changes that touch the execution path of a trading system — order placement, cancel and amend, fill and inventory accounting, risk gates, emergency stop, money arithmetic, market data ingestion, and latency-sensitive hot paths. Preloads the quant-trading and quant-trading-crypto-struct skills and reads the matching language rule for Rust or Python diffs and the onchain-execution skill for chain client code. Use before committing such a change in any repo that has no reviewer of its own for that path. Returns PASS, FAIL, or PASS-WITH-RISKS with each risk tied to a line and a concrete failure scenario. Read-only."
 config_file = "agents/quant-trading-code-reviewer.toml"
 
 [agents."quant-trading-developer"]
