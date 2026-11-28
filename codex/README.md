@@ -69,10 +69,10 @@ standard library. Import/validation additionally need PyYAML.
 ## What was ported
 
 - Global preferences, machine context, repo-document fallback, Rust/Python/Go rules.
-- 25 active custom skills, 23 AWS skills with all references/scripts/assets,
+- 27 active custom skills, 23 AWS skills with all references/scripts/assets,
   4 portable document skills, 7 commands, 3 plugin workflows, 3 language skills
-  and 4 adapted synced/loop workflows: **69 skills** total.
-- 22 custom agents and 7 review/simplifier plugin agents: **29 native roles**.
+  and 4 adapted synced/loop workflows: **71 skills** total.
+- 23 custom agents and 7 review/simplifier plugin agents: **30 native roles**.
   Explicit skill preloads become instructions to read the skill. Read-only
   roles use a read-only sandbox; only available tools may be used.
 - AWS MCP uses the same command/arguments as the active Claude configuration.
