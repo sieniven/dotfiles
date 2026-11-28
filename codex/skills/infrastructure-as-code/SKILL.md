@@ -1,6 +1,6 @@
 ---
 name: infrastructure-as-code
-description: Infrastructure-as-code and DevOps delivery practice, independent of tool. The paradigms (declarative desired state, idempotence and convergence, one-shot versus continuous reconciliation, immutable versus mutable infrastructure), resource identity and what replaces a resource, how to cut stacks by lifecycle and blast radius and join them through one-way contracts, environments and promotion, adopting hand-built infrastructure versus rebuilding it, drift, names, tags and address plans as interfaces, the change pipeline (static checks, policy as code, a reviewed plan tied to a commit, apply, verify), two-step changes and rollback, secrets, deployer identity and supply-chain pinning, and day-2 operations. Carries a concept map across CloudFormation, CDK, Terraform, OpenTofu and Pulumi. Use when designing or reviewing infrastructure code, a stack layout, a deployment pipeline, a migration or an adoption plan, or when choosing between IaC tools or approaches.
+description: Infrastructure-as-code and DevOps delivery practice, independent of tool. Use for any change to infrastructure code (Terraform, OpenTofu, Pulumi, CDK, CloudFormation), even a small one, such as a firewall rule, a rename or move, a credential, a new stack or environment, a deployment pipeline, a migration or an adoption plan, and when choosing between IaC tools or approaches. Covers the paradigms (declarative desired state, idempotence, one-shot against continuous reconciliation, immutable against mutable infrastructure), resource identity and what replaces a resource, cutting stacks by lifecycle and blast radius and joining them through one-way contracts, environments and promotion, adopting hand-built infrastructure against rebuilding it, drift, names, tags and address plans as interfaces, the change pipeline (policy as code, a reviewed plan tied to a commit, apply, verify), two-step changes and rollback, secrets, deployer identity and supply-chain pinning, day-2 work, and a concept map across those tools.
 ---
 
 # Infrastructure as code
@@ -121,9 +121,17 @@ what counts as production) win over anything here. Read them first.
 - **Two steps (expand, then contract)** for firewall rules, DNS, credentials,
   names and anything a client holds: add the new beside the old and apply;
   verify from evidence (flow logs, access logs, metrics), not from belief;
-  remove the old in a second change.
-- One kind of change per apply: no refactor with a behaviour change, no tool
-  or provider upgrade with a functional change.
+  remove the old in a second change. Asked to narrow or replace such a rule,
+  the diff you write is step one only: the new rules added, the old one
+  left in place. Removing the old one is a separate, later change, and you
+  say so. Do not narrow in place and offer the two steps as a fallback, and
+  do not collapse them because the request was urgent or asked for a single
+  change: swapping in one apply leaves a moment when neither rule exists.
+- **One kind of change per apply.** A rename or a move is its own change,
+  whose plan must show the move and nothing else; the behaviour change (a
+  rule, a value) follows in a second one. When a request bundles them, split
+  them and say why. The same holds for a tool or provider upgrade beside a
+  functional change.
 - Rollback is a forward change: the previous commit applied again, with its
   own plan. It restores configuration, never deleted data or a replaced
   resource. Know the one-way changes (deletes, replacements, data

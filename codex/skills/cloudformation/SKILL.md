@@ -1,6 +1,6 @@
 ---
 name: cloudformation
-description: CloudFormation practice for templates, change sets and stacks that hold live infrastructure. How an update is classified (no interruption, some interruption, replacement) and how to read a change set before it runs, logical identity against physical names, Retain policies and stack protections, importing hand-built resources and moving or renaming them without recreating them (import change sets, two-stage imports, stack refactoring, rename by twin), stack boundaries and cross-stack contracts (SSM parameters against Exports), parameters and what `deploy` keeps between runs, stack-level tags, quotas such as the 51,200-byte inline template, the validation ladder (cfn-lint, cfn-guard, security scanners, pre-deployment validation), failure triage with describe-events, rollback recovery, drift, and the EC2 and VPC properties that replace a resource. Use when writing, reviewing or deploying a CloudFormation template, adopting existing AWS resources, reading a change set, or diagnosing a failed or drifted stack.
+description: CloudFormation practice for templates, change sets and stacks that hold live infrastructure. Use for any change in a repo of CloudFormation templates, even a small one and even when the request never says CloudFormation, such as a security group rule, subnet, route, peering, IAM or instance change, a new stack, adopting existing AWS resources, reading a change set, or a failed or drifted stack. Covers how each property updates (in place, interruption, replacement), fixed names and Retain policies, why a rule is changed in two change sets, import and moves between stacks (import change sets, stack refactoring, the twin pattern), cross-stack contracts (SSM parameters against Exports), what `deploy` keeps between runs, stack-level tags, quotas, the validation ladder (cfn-lint, cfn-guard, pre-deployment validation), failure triage with describe-events, rollback recovery, drift, and the EC2 and VPC properties that replace a resource or drop traffic.
 ---
 
 # CloudFormation
@@ -36,7 +36,9 @@ in the `infrastructure-as-code` skill.
 - Every property of every resource type has an update behaviour, printed
   on its reference page as **Update requires**: *No interruption*, *Some
   interruptions*, or *Replacement*. Look it up for each property a change
-  touches. The resource schema lists the immutable ones
+  touches, including the ones that look harmless (a rule's CIDR, a
+  description, a tag), and state each one's behaviour in the reply, one
+  line per property. The resource schema lists the immutable ones
   (`createOnlyProperties`) and is a quick second check; the commands are in
   `references/change-sets-and-deploys.md`.
 - **Replacement** creates a new physical resource, repoints references,
@@ -58,6 +60,16 @@ in the `infrastructure-as-code` skill.
 - A value CloudFormation resolves at deploy time (an SSM parameter type, a
   dynamic reference without a version) can change a resource in a deploy
   whose template did not change.
+- **A firewall rule, route or other access path is changed in two change
+  sets, even when one quick change is asked for.** The first adds the new
+  rules beside the old one, as new resources, and leaves the old rule's
+  resource untouched. The second, later and separate, removes the old rule
+  once the flow logs show nothing else used it. Write step one only, and
+  say in the reply that step two follows. Editing a rule in place replaces
+  it: CloudFormation removes the old rule, then adds the new one, and for a
+  moment neither exists. Adding and removing in one change set avoids that
+  gap but cuts off every other client of the old rule with no evidence
+  that there are none.
 
 ## Reading a change set
 

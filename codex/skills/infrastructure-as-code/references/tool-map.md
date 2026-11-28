@@ -61,6 +61,15 @@ one. CloudFormation's own mechanics are in the `cloudformation` skill.
   means a gap unless it is set; with it, the same fixed-name problem
   appears.
 
+**Rules as their own resources.**
+- A firewall rule declared as a separate resource has its own identity, so
+  the expand step is a pure add and the contract step a pure remove. A rule
+  declared inline on its group is changed by rewriting the group's list,
+  and the provider decides what is revoked in between. Where rules change
+  over time, declare them separately (Terraform's
+  `aws_vpc_security_group_ingress_rule`, CloudFormation's
+  `AWS::EC2::SecurityGroupIngress`).
+
 **Fast paths that are for development only.**
 - `cdk deploy --hotswap` changes resources directly and deliberately
   introduces drift. `--revert-drift` puts the stack back.
