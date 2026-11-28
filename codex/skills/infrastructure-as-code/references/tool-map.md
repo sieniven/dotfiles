@@ -1,9 +1,13 @@
 # The same concepts in each tool
 
-Checked against each project's documentation on 2026-11-28 (Terraform
-1.17, OpenTofu 1.13, the CDK v2 CLI, current Pulumi). Versions in brackets
-are where a feature arrived; check the version in use before relying on
-one. CloudFormation's own mechanics are in the `cloudformation` skill.
+The Terraform, OpenTofu, Pulumi and CDK entries for plans, identity,
+import, protection, drift, locking and secrets were checked against each
+project's documentation on 2026-11-28 (Terraform 1.17, OpenTofu 1.13, the
+CDK v2 CLI, current Pulumi). The policy and test rows and the note on
+separate rule resources are from general practice, not from that check.
+Versions in brackets are where a feature arrived; check the version in
+use before relying on one. CloudFormation's own mechanics are in the
+`cloudformation` skill.
 
 ## Concept map
 

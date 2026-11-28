@@ -33,10 +33,11 @@ change, and the change set has the last word.
   whole stack update with it. A policy rule that checks the set fails in
   seconds instead.
 - **Egress.** A group created with no egress rules gets AWS's allow-all
-  egress. Declaring `SecurityGroupEgress` inline replaces that default
-  with exactly what is declared. Standalone
-  `AWS::EC2::SecurityGroupEgress` resources only add rules; the default
-  stays. To restrict egress, declare it inline.
+  egress; a group created with inline `SecurityGroupEgress` gets exactly
+  what is declared. Standalone `AWS::EC2::SecurityGroupEgress` resources
+  are added after the group exists, so by that rule the default stays
+  beside them (the reference page does not say so in as many words: read
+  the group back). To restrict egress, declare it inline.
 - **Inline or standalone.** Two groups that reference each other must use
   standalone rule resources, or the template has a circular dependency.
   Open-to-the-internet ingress is better inline, where a policy rule can

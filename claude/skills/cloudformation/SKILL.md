@@ -67,9 +67,10 @@ in the `infrastructure-as-code` skill.
   once the flow logs show nothing else used it. Write step one only, and
   say in the reply that step two follows. Editing a rule in place replaces
   it: CloudFormation removes the old rule, then adds the new one, and for a
-  moment neither exists. Adding and removing in one change set avoids that
-  gap but cuts off every other client of the old rule with no evidence
-  that there are none.
+  moment neither exists. Adding new rule resources and removing the old
+  one in a single change set should avoid that gap, since CloudFormation
+  usually creates before it cleans up, but it cuts off every other client
+  of the old rule with no evidence that there are none.
 
 ## Reading a change set
 
