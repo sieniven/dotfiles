@@ -54,6 +54,7 @@
       "Bash(unset *)",
       "Bash(cd /Users/niven.sie/dev/*)",
       "Bash(/Users/niven.sie/dev/*)",
+      "Bash(~/.claude/scripts/devbox.py *)",
       "Read(~/dev/**)",
       "Read(~/.cargo/**)",
       "Read(~/.claude/**)",
@@ -67,7 +68,9 @@
     ],
     "deny": [
       "Bash(gh pr merge:*)",
-      "Bash(nohup:*)"
+      "Bash(nohup:*)",
+      "Bash(curl *api/workstations*)",
+      "Bash(wget *api/workstations*)"
     ]
   },
   "model": "claude-fable-5-1",
