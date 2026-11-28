@@ -139,6 +139,11 @@ strategy and monitor repos that trade on them today, `quant-trading-apex` or
   `market-data-pipelines`, `prometheus-observability`, `systems-benchmarking`.
 - `tigerstyle` only for direct code conversions and ports;
   `deterministic-simulation-testing` for simulators and fault testing.
+- For infrastructure code: `infrastructure-as-code` (paradigms, stack boundaries
+  and contracts, the change pipeline, adoption and drift, whatever the tool) and,
+  where the repo holds CloudFormation templates, `cloudformation` (update
+  behaviour and change sets, import and refactoring, validation, failure
+  triage). `infrastructure-implementer` preloads both and never applies a change.
 - For a pinned, latency-critical runtime and the host under it:
   `low-latency-threading` (duty cycles, idle ladders, placement and pinning),
   `cpu-cache-and-memory-layout` (false sharing, padding, layout, TLB and NUMA),

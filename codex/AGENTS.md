@@ -158,6 +158,13 @@ adapters and the engine, strategy and monitor repos that trade on them today,
   `prometheus-observability`, `systems-benchmarking`.
 - `tigerstyle` only for direct code conversions and ports;
   `deterministic-simulation-testing` for simulators and fault testing.
+- For infrastructure code: `infrastructure-as-code` (paradigms, stack boundaries
+  and contracts, the change pipeline, adoption and drift, whatever the tool) and,
+  where the repo holds CloudFormation templates, `cloudformation` (update
+  behaviour and change sets, import and refactoring, validation, failure
+  triage); where it and AWS's `aws-cloudformation` skill differ, `cloudformation`
+  and the repo win. The `infrastructure-implementer` role reads both and never
+  applies a change.
 
 ## Harness maintenance
 
