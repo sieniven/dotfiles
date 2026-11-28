@@ -23,6 +23,9 @@ CLAUDE.md.
   running, deploying, writing, starting or stopping anything needs my explicit
   permission for that one action. The dev hosts (named machine-locally) take
   anything. The machine-local `ssh-hosts` skill, where present, maps the hosts.
+- **Start and stop only my own dev box, only through `~/.claude/scripts/devbox.py`.**
+  It is bound to one instance (`~/.claude/local/devbox.env`) and takes no ID. Never
+  call the launcher API directly, and never start or stop any other instance.
 - **Guards are rules, not obstacles.** Hooks in `~/.claude/hooks/` enforce the rules
   above (plus no `--no-verify`, no secrets in commits, and a prompt before loosening
   lint config or touching risk/production config). When one denies a call, do not
